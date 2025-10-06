@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>شجرة العائلة</title>
+    <!-- روابط CSS و JavaScript -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- رأس الصفحة -->
+        <header>
+            <h1><i class="fas fa-sitemap"></i> شجرة العائلة</h1>
+            <p>أنشئ شجرة عائلتك وشاركها مع أحبائك</p>
+        </header>
+
+        <!-- المحتوى الرئيسي -->
+        <main class="app-content">
+            <!-- أزرار التحكم -->
+            <section class="controls">
+                <div>
+                    <button class="btn" id="addPersonBtn">
+                        <i class="fas fa-user-plus"></i> إضافة شخص جديد
+                    </button>
+                    <button class="btn btn-secondary" id="shareBtn">
+                        <i class="fas fa-share-alt"></i> مشاركة الشجرة
+                    </button>
+                </div>
+                <div>
+                    <button class="btn" id="exportBtn">
+                        <i class="fas fa-download"></i> تصدير كصورة
+                    </button>
+                </div>
+            </section>
+
+            <!-- منطقة عرض الشجرة -->
+            <section class="tree-container">
+                <div id="treeDisplay">
+                    <div class="empty-state">
+                        <i class="fas fa-sitemap"></i>
+                        <h3>ابدأ بإنشاء شجرة عائلتك</h3>
+                        <p>أضف الشخص الأول لتبدأ رحلة بناء شجرة عائلتك</p>
+                        <button class="btn" id="emptyStateAddBtn">
+                            <i class="fas fa-user-plus"></i> إضافة شخص جديد
+                        </button>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- نموذج إضافة/تعديل شخص -->
+    <div id="personModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">إضافة شخص جديد</h2>
+                <button class="close-btn" id="closeModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="personForm">
+                <!-- حقول النموذج -->
+                <div class="form-group">
+                    <label for="personName">الاسم الكامل *</label>
+                    <input type="text" id="personName" class="form-control" required>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="personGender">الجنس *</label>
+                        <select id="personGender" class="form-control" required>
+                            <option value="">-- اختر --</option>
+                            <option value="male">ذكر</option>
+                            <option value="female">أنثى</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="personRelation">العلاقة</label>
+                        <select id="personRelation" class="form-control">
+                            <option value="">-- اختر --</option>
+                            <option value="father">أب</option>
+                            <option value="mother">أم</option>
+                            <option value="son">ابن</option>
+                            <option value="daughter">ابنة</option>
+                            <option value="husband">زوج</option>
+                            <option value="wife">زوجة</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="personBirthDate">تاريخ الميلاد</label>
+                        <input type="date" id="personBirthDate" class="form-control">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="personDeathDate">تاريخ الوفاة</label>
+                        <input type="date" id="personDeathDate" class="form-control">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>الصورة الشخصية</label>
+                    <div class="file-input-wrapper">
+                        <input type="file" id="personPhoto" accept="image/*">
+                        <label for="personPhoto" class="file-input-label">
+                            <i class="fas fa-cloud-upload-alt"></i> اختر صورة
+                        </label>
+                    </div>
+                    <img id="photoPreview" class="photo-preview" style="display: none;">
+                </div>
+                
+                <div class="form-group">
+                    <label for="personNotes">ملاحظات</label>
+                    <textarea id="personNotes" class="form-control" rows="3"></textarea>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" id="cancelBtn">
+                        <i class="fas fa-times"></i> إلغاء
+                    </button>
+                    <button type="submit" class="btn" id="saveBtn">
+                        <i class="fas fa-save"></i> حفظ
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- نافذة المشاركة -->
+    <div id="shareModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>مشاركة شجرة العائلة</h2>
+                <button class="close-btn" id="closeShareModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="share-container">
+                <p>شارك شجرة عائلتك مع الآخرين عبر الرابط التالي:</p>
+                <div class="share-link">
+                    <input type="text" id="shareLink" readonly>
+                    <button class="btn" id="copyLinkBtn">
+                        <i class="fas fa-copy"></i> نسخ
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- رسالة الإشعار -->
+    <div id="toast" class="toast">
+        <i class="fas fa-check-circle"></i>
+        <span id="toastMessage"></span>
+    </div>
+
+    <div class="tooltip"></div>
+
+    <!-- روابط JavaScript -->
+    <script src="js/app.js"></script>
+</body>
+      </html>
