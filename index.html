@@ -242,6 +242,25 @@
             margin-top: 20px;
         }
         
+        .person-options {
+            position: absolute;
+            background: white;
+            border-radius: 5px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+            z-index: 100;
+            padding: 5px 0;
+        }
+        
+        .option {
+            padding: 8px 15px;
+            cursor: pointer;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .option:hover {
+            background-color: #f8f9fa;
+        }
+        
         @media (max-width: 768px) {
             .app-content {
                 flex-direction: column;
@@ -395,6 +414,16 @@
             cancelDelete.addEventListener('click', closeConfirmModal);
             confirmDelete.addEventListener('click', deletePerson);
             
+            // إغلاق النماذج عند النقر خارجها
+            window.addEventListener('click', function(event) {
+                if (event.target === personModal) {
+                    closePersonModal();
+                }
+                if (event.target === confirmModal) {
+                    closeConfirmModal();
+                }
+            });
+            
             // عرض شجرة العائلة
             renderFamilyTree();
         });
@@ -513,8 +542,8 @@
                 personElement.innerHTML = `
                     <div class="person-name">${person.name}</div>
                     <div class="person-dates">
-                        ${person.birthDate ? person.birthDate.split('-').reverse().join('/') : ''}
-                        ${person.deathDate ? ' - ' + person.deathDate.split('-').reverse().join('/') : ''}
+                        ${person.birthDate ? formatDate(person.birthDate) : ''}
+                        ${person.deathDate ? ' - ' + formatDate(person.deathDate) : ''}
                     </div>
                 `;
                 
@@ -526,6 +555,13 @@
                 
                 treeContainer.appendChild(personElement);
             });
+        }
+        
+        // تنسيق التاريخ
+        function formatDate(dateString) {
+            if (!dateString) return '';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('ar-EG');
         }
         
         // جعل العنصر قابلاً للسحب
@@ -590,15 +626,10 @@
             optionsMenu.style.position = 'absolute';
             optionsMenu.style.left = `${element.offsetLeft + element.offsetWidth}px`;
             optionsMenu.style.top = `${element.offsetTop}px`;
-            optionsMenu.style.background = 'white';
-            optionsMenu.style.borderRadius = '5px';
-            optionsMenu.style.boxShadow = '0 3px 10px rgba(0,0,0,0.2)';
-            optionsMenu.style.zIndex = '100';
-            optionsMenu.style.padding = '5px 0';
             
             optionsMenu.innerHTML = `
-                <div class="option" data-action="edit" style="padding: 8px 15px; cursor: pointer; border-bottom: 1px solid #eee;">تعديل</div>
-                <div class="option" data-action="delete" style="padding: 8px 15px; cursor: pointer; color: #dc3545;">حذف</div>
+                <div class="option" data-action="edit">تعديل</div>
+                <div class="option" data-action="delete" style="color: #dc3545;">حذف</div>
             `;
             
             treeContainer.appendChild(optionsMenu);
