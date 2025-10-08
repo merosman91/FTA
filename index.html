@@ -70,6 +70,9 @@
             border-radius: 10px;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
             margin-bottom: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
         }
         
         .form-group {
@@ -100,8 +103,6 @@
             cursor: pointer;
             font-size: 1rem;
             transition: all 0.3s ease;
-            margin-right: 10px;
-            margin-bottom: 10px;
         }
         
         button:hover {
@@ -135,6 +136,8 @@
             position: relative;
             min-height: 400px;
             margin: 20px 0;
+            border: 1px dashed #ccc;
+            background-color: #f8f9fa;
         }
         
         .person {
@@ -240,6 +243,7 @@
             display: flex;
             justify-content: flex-end;
             margin-top: 20px;
+            gap: 10px;
         }
         
         .person-options {
@@ -249,6 +253,7 @@
             box-shadow: 0 3px 10px rgba(0,0,0,0.2);
             z-index: 100;
             padding: 5px 0;
+            min-width: 120px;
         }
         
         .option {
@@ -395,7 +400,6 @@
         const loadTreeBtn = document.getElementById('loadTreeBtn');
         const resetTreeBtn = document.getElementById('resetTreeBtn');
         const cancelBtn = document.getElementById('cancelBtn');
-        const savePersonBtn = document.getElementById('savePersonBtn');
         const cancelDelete = document.getElementById('cancelDelete');
         const confirmDelete = document.getElementById('confirmDelete');
         
@@ -410,9 +414,9 @@
             loadTreeBtn.addEventListener('click', loadTreeFromStorage);
             resetTreeBtn.addEventListener('click', resetTree);
             cancelBtn.addEventListener('click', closePersonModal);
-            personForm.addEventListener('submit', savePerson);
+            personForm.addEventListener('submit', handleSavePerson);
             cancelDelete.addEventListener('click', closeConfirmModal);
-            confirmDelete.addEventListener('click', deletePerson);
+            confirmDelete.addEventListener('click', handleDeletePerson);
             
             // إغلاق النماذج عند النقر خارجها
             window.addEventListener('click', function(event) {
@@ -470,7 +474,7 @@
         }
         
         // حفظ بيانات الفرد
-        function savePerson(e) {
+        function handleSavePerson(e) {
             e.preventDefault();
             
             const name = document.getElementById('personName').value;
@@ -511,7 +515,7 @@
         }
         
         // حذف فرد
-        function deletePerson() {
+        function handleDeletePerson() {
             if (!selectedPersonId) return;
             
             familyTree = familyTree.filter(p => p.id !== selectedPersonId);
@@ -623,7 +627,6 @@
             // إنشاء قائمة الخيارات
             const optionsMenu = document.createElement('div');
             optionsMenu.className = 'person-options';
-            optionsMenu.style.position = 'absolute';
             optionsMenu.style.left = `${element.offsetLeft + element.offsetWidth}px`;
             optionsMenu.style.top = `${element.offsetTop}px`;
             
@@ -650,10 +653,12 @@
             });
             
             // إغلاق القائمة عند النقر في أي مكان آخر
-            document.addEventListener('click', function closeMenu() {
-                optionsMenu.remove();
-                document.removeEventListener('click', closeMenu);
-            });
+            setTimeout(() => {
+                document.addEventListener('click', function closeMenu() {
+                    optionsMenu.remove();
+                    document.removeEventListener('click', closeMenu);
+                });
+            }, 0);
         }
         
         // رسم الموصلات بين الأفراد
@@ -662,37 +667,47 @@
             // في تطبيق حقيقي، ستحتاج إلى خوارزمية أكثر تعقيدًا لربط الأفراد
             
             // مثال على موصل رأسي
-            const verticalConnector = document.createElement('div');
-            verticalConnector.className = 'connector vertical';
-            verticalConnector.style.left = '50%';
-            verticalConnector.style.top = '100px';
-            verticalConnector.style.height = '200px';
-            treeContainer.appendChild(verticalConnector);
-            
-            // مثال على موصل أفقي
-            const horizontalConnector = document.createElement('div');
-            horizontalConnector.className = 'connector horizontal';
-            horizontalConnector.style.left = '30%';
-            horizontalConnector.style.top = '300px';
-            horizontalConnector.style.width = '40%';
-            treeContainer.appendChild(horizontalConnector);
+            if (familyTree.length > 0) {
+                const verticalConnector = document.createElement('div');
+                verticalConnector.className = 'connector vertical';
+                verticalConnector.style.left = '50%';
+                verticalConnector.style.top = '100px';
+                verticalConnector.style.height = '200px';
+                treeContainer.appendChild(verticalConnector);
+                
+                // مثال على موصل أفقي
+                const horizontalConnector = document.createElement('div');
+                horizontalConnector.className = 'connector horizontal';
+                horizontalConnector.style.left = '30%';
+                horizontalConnector.style.top = '300px';
+                horizontalConnector.style.width = '40%';
+                treeContainer.appendChild(horizontalConnector);
+            }
         }
         
         // حفظ الشجرة في التخزين المحلي
         function saveTreeToStorage() {
-            localStorage.setItem('familyTree', JSON.stringify(familyTree));
-            alert('تم حفظ شجرة العائلة بنجاح!');
+            try {
+                localStorage.setItem('familyTree', JSON.stringify(familyTree));
+                alert('تم حفظ شجرة العائلة بنجاح!');
+            } catch (e) {
+                alert('حدث خطأ أثناء حفظ الشجرة: ' + e.message);
+            }
         }
         
         // تحميل الشجرة من التخزين المحلي
         function loadTreeFromStorage() {
-            const savedTree = localStorage.getItem('familyTree');
-            if (savedTree) {
-                familyTree = JSON.parse(savedTree);
-                renderFamilyTree();
-                alert('تم تحميل شجرة العائلة بنجاح!');
-            } else {
-                alert('لا توجد شجرة عائلة محفوظة!');
+            try {
+                const savedTree = localStorage.getItem('familyTree');
+                if (savedTree) {
+                    familyTree = JSON.parse(savedTree);
+                    renderFamilyTree();
+                    alert('تم تحميل شجرة العائلة بنجاح!');
+                } else {
+                    alert('لا توجد شجرة عائلة محفوظة!');
+                }
+            } catch (e) {
+                alert('حدث خطأ أثناء تحميل الشجرة: ' + e.message);
             }
         }
         
