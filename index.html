@@ -1,724 +1,282 @@
-<!DOCTYPE html>
+<!doctype html>
+
 <html lang="ar" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>شجرة العائلة</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        
-        body {
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-            color: #333;
-            min-height: 100vh;
-            padding: 20px;
-        }
-        
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            background-color: white;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-            overflow: hidden;
-        }
-        
-        header {
-            background: linear-gradient(135deg, #4b6cb7 0%, #182848 100%);
-            color: white;
-            padding: 20px;
-            text-align: center;
-        }
-        
-        h1 {
-            font-size: 2.5rem;
-            margin-bottom: 10px;
-        }
-        
-        .subtitle {
-            font-size: 1.1rem;
-            opacity: 0.9;
-        }
-        
-        .app-content {
-            display: flex;
-            min-height: 600px;
-        }
-        
-        .sidebar {
-            width: 300px;
-            background-color: #f8f9fa;
-            padding: 20px;
-            border-left: 1px solid #e9ecef;
-        }
-        
-        .main-content {
-            flex: 1;
-            padding: 20px;
-            position: relative;
-            overflow: auto;
-        }
-        
-        .control-panel {
-            background-color: white;
-            padding: 15px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-            margin-bottom: 20px;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-        
-        .form-group {
-            margin-bottom: 15px;
-        }
-        
-        label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: 600;
-            color: #495057;
-        }
-        
-        input, select {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ced4da;
-            border-radius: 5px;
-            font-size: 1rem;
-        }
-        
-        button {
-            background: linear-gradient(135deg, #4b6cb7 0%, #182848 100%);
-            color: white;
-            border: none;
-            padding: 10px 15px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 1rem;
-            transition: all 0.3s ease;
-        }
-        
-        button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-        }
-        
-        button.secondary {
-            background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
-        }
-        
-        button.success {
-            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-        }
-        
-        button.danger {
-            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
-        }
-        
-        .family-tree {
-            background-color: white;
-            border-radius: 10px;
-            padding: 20px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-            min-height: 500px;
-            position: relative;
-            overflow: auto;
-        }
-        
-        .tree-container {
-            position: relative;
-            min-height: 400px;
-            margin: 20px 0;
-            border: 1px dashed #ccc;
-            background-color: #f8f9fa;
-        }
-        
-        .person {
-            position: absolute;
-            width: 120px;
-            padding: 10px;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            z-index: 10;
-        }
-        
-        .person:hover {
-            transform: scale(1.05);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-            z-index: 20;
-        }
-        
-        .person.male {
-            border-top: 4px solid #4b6cb7;
-        }
-        
-        .person.female {
-            border-top: 4px solid #e83e8c;
-        }
-        
-        .person-name {
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-        
-        .person-dates {
-            font-size: 0.8rem;
-            color: #6c757d;
-        }
-        
-        .connector {
-            position: absolute;
-            background-color: #6c757d;
-            z-index: 1;
-        }
-        
-        .connector.horizontal {
-            height: 2px;
-        }
-        
-        .connector.vertical {
-            width: 2px;
-        }
-        
-        .instructions {
-            background-color: #e9ecef;
-            padding: 15px;
-            border-radius: 8px;
-            margin-top: 20px;
-        }
-        
-        .instructions h3 {
-            margin-bottom: 10px;
-            color: #495057;
-        }
-        
-        .instructions ul {
-            padding-right: 20px;
-        }
-        
-        .instructions li {
-            margin-bottom: 8px;
-            line-height: 1.5;
-        }
-        
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-            z-index: 1000;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .modal-content {
-            background-color: white;
-            padding: 30px;
-            border-radius: 10px;
-            width: 90%;
-            max-width: 500px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-        }
-        
-        .modal h2 {
-            margin-bottom: 20px;
-            color: #495057;
-        }
-        
-        .modal-buttons {
-            display: flex;
-            justify-content: flex-end;
-            margin-top: 20px;
-            gap: 10px;
-        }
-        
-        .person-options {
-            position: absolute;
-            background: white;
-            border-radius: 5px;
-            box-shadow: 0 3px 10px rgba(0,0,0,0.2);
-            z-index: 100;
-            padding: 5px 0;
-            min-width: 120px;
-        }
-        
-        .option {
-            padding: 8px 15px;
-            cursor: pointer;
-            border-bottom: 1px solid #eee;
-        }
-        
-        .option:hover {
-            background-color: #f8f9fa;
-        }
-        
-        @media (max-width: 768px) {
-            .app-content {
-                flex-direction: column;
-            }
-            
-            .sidebar {
-                width: 100%;
-                border-left: none;
-                border-bottom: 1px solid #e9ecef;
-            }
-        }
-    </style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>تطبيق شجرة العائلة — ملف واحد</title>
+  <style>
+    :root{--bg:#f7f9fc;--card:#fff;--accent:#f6a623;--muted:#666}
+    html,body{height:100%;margin:0;font-family:Tahoma,Arial,helvetica,sans-serif;background:var(--bg);color:#111}
+    .app{max-width:1100px;margin:20px auto;padding:18px}
+    header{display:flex;gap:16px;align-items:center;margin-bottom:12px}
+    header h1{font-size:20px;margin:0}
+    .layout{display:grid;grid-template-columns:320px 1fr;gap:16px}
+    .panel{background:var(--card);border-radius:10px;padding:12px;box-shadow:0 4px 10px rgba(0,0,0,0.05)}
+    label{display:block;margin-top:8px;font-size:13px;color:var(--muted)}
+    input,select,button,textarea{width:100%;padding:8px;margin-top:6px;border:1px solid #ddd;border-radius:6px;font-size:14px}
+    button{cursor:pointer;background:var(--accent);color:#fff;border:none}
+    .small{display:flex;gap:8px}
+    .tree-area{height:720px;overflow:auto;padding:10px}
+    svg{background:linear-gradient(180deg, rgba(246,166,35,0.03), transparent)}
+    .node{cursor:grab}
+    .node rect{fill:#fff;stroke:#dbe7fb;stroke-width:1;rx:8}
+    .node text{font-size:13px;pointer-events:none}
+    .controls{display:flex;gap:8px;margin-top:8px}
+    .muted{color:var(--muted);font-size:13px}
+    footer{margin-top:12px;font-size:13px;color:var(--muted)}
+  </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>شجرة العائلة</h1>
-            <p class="subtitle">أنشئ شجرة عائلتك بسهولة وبدون تعقيد</p>
-        </header>
-        
-        <div class="app-content">
-            <div class="main-content">
-                <div class="control-panel">
-                    <button id="addPersonBtn">إضافة فرد</button>
-                    <button id="saveTreeBtn" class="success">حفظ الشجرة</button>
-                    <button id="loadTreeBtn" class="secondary">تحميل الشجرة</button>
-                    <button id="resetTreeBtn" class="danger">بدء من جديد</button>
-                </div>
-                
-                <div class="family-tree">
-                    <h2>شجرة العائلة</h2>
-                    <div class="tree-container" id="treeContainer">
-                        <!-- سيتم إضافة عناصر الشجرة هنا ديناميكيًا -->
-                    </div>
-                </div>
-            </div>
-            
-            <div class="sidebar">
-                <div class="instructions">
-                    <h3>كيفية الاستخدام:</h3>
-                    <ul>
-                        <li>انقر على "إضافة فرد" لإضافة فرد جديد للشجرة</li>
-                        <li>املأ البيانات المطلوبة في النموذج</li>
-                        <li>اسحب الأفراد لوضعهم في المكان المناسب</li>
-                        <li>انقر على فرد لعرض خيارات التعديل أو الحذف</li>
-                        <li>احفظ شجرتك لاستعادتها لاحقًا</li>
-                    </ul>
-                </div>
-                
-                <div class="instructions">
-                    <h3>نصائح:</h3>
-                    <ul>
-                        <li>ابدأ بإضافة الجد الأكبر في الأعلى</li>
-                        <li>أضف الأبناء تحت الآباء مباشرة</li>
-                        <li>استخدم الألوان للتمييز بين الذكور والإناث</li>
-                        <li>يمكنك إضافة صور للأفراد لتعزيز الشجرة</li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- نموذج إضافة فرد -->
-    <div class="modal" id="personModal">
-        <div class="modal-content">
-            <h2 id="modalTitle">إضافة فرد جديد</h2>
-            <form id="personForm">
-                <div class="form-group">
-                    <label for="personName">الاسم الكامل:</label>
-                    <input type="text" id="personName" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="personGender">الجنس:</label>
-                    <select id="personGender" required>
-                        <option value="male">ذكر</option>
-                        <option value="female">أنثى</option>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label for="birthDate">تاريخ الميلاد:</label>
-                    <input type="date" id="birthDate">
-                </div>
-                
-                <div class="form-group">
-                    <label for="deathDate">تاريخ الوفاة (إن وجد):</label>
-                    <input type="date" id="deathDate">
-                </div>
-                
-                <div class="form-group">
-                    <label for="personNotes">ملاحظات:</label>
-                    <input type="text" id="personNotes" placeholder="معلومات إضافية عن الفرد">
-                </div>
-                
-                <div class="modal-buttons">
-                    <button type="button" id="cancelBtn" class="secondary">إلغاء</button>
-                    <button type="submit" id="savePersonBtn" class="success">حفظ</button>
-                </div>
-            </form>
-        </div>
-    </div>
-    
-    <!-- نموذج تأكيد الحذف -->
-    <div class="modal" id="confirmModal">
-        <div class="modal-content">
-            <h2>تأكيد الحذف</h2>
-            <p>هل أنت متأكد من رغبتك في حذف هذا الفرد؟</p>
-            <div class="modal-buttons">
-                <button id="cancelDelete" class="secondary">إلغاء</button>
-                <button id="confirmDelete" class="danger">حذف</button>
-            </div>
-        </div>
+  <div class="app">
+    <header>
+      <h1>تطبيق شجرة العائلة (ملف واحد)</h1>
+      <div class="muted">أضف أشخاصًا، حدِّد آباء، حرِّك العقد، حمّل واحفظ الشجرة كملف JSON أو SVG</div>
+    </header><div class="layout">
+  <div class="panel">
+    <h3>إضافة / تعديل شخص</h3>
+    <input id="personName" placeholder="الاسم الكامل" />
+    <label>الجنس</label>
+    <select id="personGender"><option value="male">ذكر</option><option value="female">أنثى</option><option value="other">آخر</option></select>
+    <label>سنة الميلاد (اختياري)</label>
+    <input id="personBirth" placeholder="مثال: 1985" />
+
+    <label>اختر أحد الوالدين لربطه (اختياري)</label>
+    <select id="parentSelect"><option value="">-- لا يربط الآن --</option></select>
+
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <button id="addPersonBtn">إضافة شخص</button>
+      <button id="updatePersonBtn" style="background:#4caf50">تحديث</button>
+      <button id="deletePersonBtn" style="background:#e74c3c">حذف الشخص</button>
     </div>
 
-    <script>
-        // بيانات التطبيق
-        let familyTree = [];
-        let editingPersonId = null;
-        let selectedPersonId = null;
-        
-        // العناصر الأساسية في DOM
-        const treeContainer = document.getElementById('treeContainer');
-        const personModal = document.getElementById('personModal');
-        const confirmModal = document.getElementById('confirmModal');
-        const personForm = document.getElementById('personForm');
-        const modalTitle = document.getElementById('modalTitle');
-        
-        // الأزرار
-        const addPersonBtn = document.getElementById('addPersonBtn');
-        const saveTreeBtn = document.getElementById('saveTreeBtn');
-        const loadTreeBtn = document.getElementById('loadTreeBtn');
-        const resetTreeBtn = document.getElementById('resetTreeBtn');
-        const cancelBtn = document.getElementById('cancelBtn');
-        const cancelDelete = document.getElementById('cancelDelete');
-        const confirmDelete = document.getElementById('confirmDelete');
-        
-        // تهيئة التطبيق
-        document.addEventListener('DOMContentLoaded', function() {
-            // تحميل شجرة العائلة من التخزين المحلي إن وجدت
-            loadTreeFromStorage();
-            
-            // إضافة مستمعي الأحداث
-            addPersonBtn.addEventListener('click', openAddPersonModal);
-            saveTreeBtn.addEventListener('click', saveTreeToStorage);
-            loadTreeBtn.addEventListener('click', loadTreeFromStorage);
-            resetTreeBtn.addEventListener('click', resetTree);
-            cancelBtn.addEventListener('click', closePersonModal);
-            personForm.addEventListener('submit', handleSavePerson);
-            cancelDelete.addEventListener('click', closeConfirmModal);
-            confirmDelete.addEventListener('click', handleDeletePerson);
-            
-            // إغلاق النماذج عند النقر خارجها
-            window.addEventListener('click', function(event) {
-                if (event.target === personModal) {
-                    closePersonModal();
-                }
-                if (event.target === confirmModal) {
-                    closeConfirmModal();
-                }
-            });
-            
-            // عرض شجرة العائلة
-            renderFamilyTree();
+    <hr />
+    <h3>إدارة الشجرة</h3>
+    <div class="controls">
+      <button id="downloadJson">حفظ JSON</button>
+      <button id="loadJson">تحميل JSON</button>
+      <input id="fileInput" type="file" accept="application/json" style="display:none" />
+      <button id="downloadSvg">حفظ كـ SVG</button>
+      <button id="clearTree" style="background:#999">مسح الشجرة</button>
+    </div>
+
+    <hr />
+    <div class="muted">نصائح:</div>
+    <ul>
+      <li class="muted">اسحب أي بطاقة لتعيد ترتيب الشجرة.</li>
+      <li class="muted">لتوصيل والد لطفل — أضف الطفل واختر والده عند الإنشاء أو استخدم القائمة لتعديل العلاقات.</li>
+    </ul>
+  </div>
+
+  <div class="panel tree-area">
+    <svg id="svgRoot" width="2000" height="1600" xmlns="http://www.w3.org/2000/svg"></svg>
+  </div>
+</div>
+
+<footer>ملف مفرد — انسخ هذا الملف وفتحه في المتصفح. تم التطوير بالعربية.</footer>
+
+  </div>  <script>
+    // نموذج بيانات بسيط
+    let state = { nodes: [], nextId: 1 };
+    const svg = document.getElementById('svgRoot');
+
+    // عناصر التحكم
+    const nameIn = document.getElementById('personName');
+    const genderIn = document.getElementById('personGender');
+    const birthIn = document.getElementById('personBirth');
+    const parentSelect = document.getElementById('parentSelect');
+    const addBtn = document.getElementById('addPersonBtn');
+    const updateBtn = document.getElementById('updatePersonBtn');
+    const deleteBtn = document.getElementById('deletePersonBtn');
+    const downloadJsonBtn = document.getElementById('downloadJson');
+    const loadJsonBtn = document.getElementById('loadJson');
+    const fileInput = document.getElementById('fileInput');
+    const downloadSvgBtn = document.getElementById('downloadSvg');
+    const clearTreeBtn = document.getElementById('clearTree');
+
+    let selectedNodeId = null;
+
+    function addNode(name, gender, birth, parentId){
+      const node = {
+        id: state.nextId++,
+        name: name || 'غير معروف',
+        gender: gender || 'other',
+        birth: birth || '',
+        x: Math.random()*1200 + 200,
+        y: Math.random()*800 + 50,
+        parents: parentId ? [parentId] : [],
+        children: []
+      };
+      state.nodes.push(node);
+      // ربط بالعلاقة
+      if(parentId){
+        const p = state.nodes.find(n=>n.id==parentId);
+        if(p && !p.children.includes(node.id)) p.children.push(node.id);
+      }
+      refreshUI();
+    }
+
+    addBtn.addEventListener('click', ()=>{
+      addNode(nameIn.value.trim(), genderIn.value, birthIn.value.trim(), parentSelect.value?Number(parentSelect.value):null);
+      nameIn.value=''; birthIn.value=''; parentSelect.value='';
+    });
+
+    updateBtn.addEventListener('click', ()=>{
+      if(!selectedNodeId) return alert('اختر شخصًا من الشجرة أولاً (اضغط على البطاقة)');
+      const n = state.nodes.find(x=>x.id==selectedNodeId);
+      n.name = nameIn.value.trim() || n.name;
+      n.gender = genderIn.value;
+      n.birth = birthIn.value.trim();
+      // تعديل الوالدين: سنجعل المحدد والدًا واحدًا فقط كاختصار
+      const newParent = parentSelect.value?Number(parentSelect.value):null;
+      // إزالة من آباء سابقين
+      state.nodes.forEach(node=>{ node.children = node.children.filter(c=>c!==n.id); });
+      n.parents = newParent? [newParent] : [];
+      if(newParent){
+        const p = state.nodes.find(x=>x.id==newParent);
+        if(p && !p.children.includes(n.id)) p.children.push(n.id);
+      }
+      refreshUI();
+    });
+
+    deleteBtn.addEventListener('click', ()=>{
+      if(!selectedNodeId) return alert('اختر شخصًا للحذف');
+      // إزالة الكائن
+      state.nodes = state.nodes.filter(n=>n.id!==selectedNodeId);
+      // إزالة من علاقات الآخرين
+      state.nodes.forEach(n=>{ n.children = n.children.filter(c=>c!==selectedNodeId); n.parents = n.parents.filter(p=>p!==selectedNodeId); });
+      selectedNodeId = null; clearForm(); refreshUI();
+    });
+
+    clearTreeBtn.addEventListener('click', ()=>{
+      if(!confirm('هل تريد مسح الشجرة كليًا؟')) return; state = {nodes: [], nextId:1}; refreshUI();
+    });
+
+    downloadJsonBtn.addEventListener('click', ()=>{
+      const dataStr = JSON.stringify(state, null, 2);
+      const blob = new Blob([dataStr], {type:'application/json'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = 'family-tree.json'; a.click(); URL.revokeObjectURL(url);
+    });
+
+    loadJsonBtn.addEventListener('click', ()=> fileInput.click());
+    fileInput.addEventListener('change', (e)=>{
+      const f = e.target.files[0]; if(!f) return;
+      const r = new FileReader(); r.onload = ()=>{
+        try{ const data = JSON.parse(r.result); if(data && Array.isArray(data.nodes)){ state = data; refreshUI(); } else alert('ملف غير صحيح'); }
+        catch(err){ alert('فشل قراءة الملف'); }
+      }; r.readAsText(f);
+    });
+
+    downloadSvgBtn.addEventListener('click', ()=>{
+      const serializer = new XMLSerializer();
+      const svgStr = serializer.serializeToString(svg);
+      const blob = new Blob([svgStr], {type:'image/svg+xml'});
+      const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href=url; a.download='family-tree.svg'; a.click(); URL.revokeObjectURL(url);
+    });
+
+    // رسم الشجرة
+    function refreshUI(){
+      // تحديث القائمة
+      parentSelect.innerHTML = '<option value="">-- لا يربط الآن --</option>';
+      state.nodes.forEach(n=>{
+        const opt = document.createElement('option'); opt.value = n.id; opt.textContent = `${n.name} (${n.birth||'؟'})`; parentSelect.appendChild(opt);
+      });
+
+      // تنظيف svg
+      while(svg.firstChild) svg.removeChild(svg.firstChild);
+
+      // خطوط العلاقة
+      state.nodes.forEach(n=>{
+        n.parents.forEach(pid=>{
+          const p = state.nodes.find(x=>x.id==pid); if(!p) return;
+          const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+          line.setAttribute('x1', p.x+80); line.setAttribute('y1', p.y+30);
+          line.setAttribute('x2', n.x+20); line.setAttribute('y2', n.y+15);
+          line.setAttribute('stroke','#9fb7e6'); line.setAttribute('stroke-width','2'); svg.appendChild(line);
         });
-        
-        // فتح نموذج إضافة فرد
-        function openAddPersonModal() {
-            editingPersonId = null;
-            modalTitle.textContent = 'إضافة فرد جديد';
-            personForm.reset();
-            personModal.style.display = 'flex';
-        }
-        
-        // فتح نموذج تعديل فرد
-        function openEditPersonModal(personId) {
-            const person = familyTree.find(p => p.id === personId);
-            if (!person) return;
-            
-            editingPersonId = personId;
-            modalTitle.textContent = 'تعديل بيانات الفرد';
-            
-            document.getElementById('personName').value = person.name;
-            document.getElementById('personGender').value = person.gender;
-            document.getElementById('birthDate').value = person.birthDate || '';
-            document.getElementById('deathDate').value = person.deathDate || '';
-            document.getElementById('personNotes').value = person.notes || '';
-            
-            personModal.style.display = 'flex';
-        }
-        
-        // إغلاق نموذج الفرد
-        function closePersonModal() {
-            personModal.style.display = 'none';
-        }
-        
-        // فتح نموذج تأكيد الحذف
-        function openConfirmModal(personId) {
-            selectedPersonId = personId;
-            confirmModal.style.display = 'flex';
-        }
-        
-        // إغلاق نموذج تأكيد الحذف
-        function closeConfirmModal() {
-            confirmModal.style.display = 'none';
-        }
-        
-        // حفظ بيانات الفرد
-        function handleSavePerson(e) {
-            e.preventDefault();
-            
-            const name = document.getElementById('personName').value;
-            const gender = document.getElementById('personGender').value;
-            const birthDate = document.getElementById('birthDate').value;
-            const deathDate = document.getElementById('deathDate').value;
-            const notes = document.getElementById('personNotes').value;
-            
-            if (editingPersonId) {
-                // تعديل فرد موجود
-                const personIndex = familyTree.findIndex(p => p.id === editingPersonId);
-                if (personIndex !== -1) {
-                    familyTree[personIndex].name = name;
-                    familyTree[personIndex].gender = gender;
-                    familyTree[personIndex].birthDate = birthDate;
-                    familyTree[personIndex].deathDate = deathDate;
-                    familyTree[personIndex].notes = notes;
-                }
-            } else {
-                // إضافة فرد جديد
-                const newPerson = {
-                    id: Date.now().toString(),
-                    name: name,
-                    gender: gender,
-                    birthDate: birthDate,
-                    deathDate: deathDate,
-                    notes: notes,
-                    x: 100,
-                    y: 100
-                };
-                
-                familyTree.push(newPerson);
-            }
-            
-            closePersonModal();
-            renderFamilyTree();
-            saveTreeToStorage();
-        }
-        
-        // حذف فرد
-        function handleDeletePerson() {
-            if (!selectedPersonId) return;
-            
-            familyTree = familyTree.filter(p => p.id !== selectedPersonId);
-            closeConfirmModal();
-            renderFamilyTree();
-            saveTreeToStorage();
-        }
-        
-        // عرض شجرة العائلة
-        function renderFamilyTree() {
-            treeContainer.innerHTML = '';
-            
-            // إضافة الموصلات أولاً (لتكون في الخلفية)
-            renderConnectors();
-            
-            // إضافة الأفراد
-            familyTree.forEach(person => {
-                const personElement = document.createElement('div');
-                personElement.className = `person ${person.gender}`;
-                personElement.style.left = `${person.x}px`;
-                personElement.style.top = `${person.y}px`;
-                personElement.setAttribute('data-id', person.id);
-                
-                // إضافة قابلية السحب
-                makeElementDraggable(personElement, person);
-                
-                // محتوى العنصر
-                personElement.innerHTML = `
-                    <div class="person-name">${person.name}</div>
-                    <div class="person-dates">
-                        ${person.birthDate ? formatDate(person.birthDate) : ''}
-                        ${person.deathDate ? ' - ' + formatDate(person.deathDate) : ''}
-                    </div>
-                `;
-                
-                // إضافة حدث النقر لعرض خيارات التعديل
-                personElement.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    showPersonOptions(person.id, personElement);
-                });
-                
-                treeContainer.appendChild(personElement);
-            });
-        }
-        
-        // تنسيق التاريخ
-        function formatDate(dateString) {
-            if (!dateString) return '';
-            const date = new Date(dateString);
-            return date.toLocaleDateString('ar-EG');
-        }
-        
-        // جعل العنصر قابلاً للسحب
-        function makeElementDraggable(element, person) {
-            let isDragging = false;
-            let offsetX, offsetY;
-            
-            element.addEventListener('mousedown', startDrag);
-            
-            function startDrag(e) {
-                isDragging = true;
-                offsetX = e.clientX - element.getBoundingClientRect().left;
-                offsetY = e.clientY - element.getBoundingClientRect().top;
-                
-                document.addEventListener('mousemove', drag);
-                document.addEventListener('mouseup', stopDrag);
-                
-                e.preventDefault();
-            }
-            
-            function drag(e) {
-                if (!isDragging) return;
-                
-                const containerRect = treeContainer.getBoundingClientRect();
-                const x = e.clientX - containerRect.left - offsetX;
-                const y = e.clientY - containerRect.top - offsetY;
-                
-                // التأكد من بقاء العنصر داخل الحاوية
-                if (x >= 0 && x <= containerRect.width - element.offsetWidth &&
-                    y >= 0 && y <= containerRect.height - element.offsetHeight) {
-                    
-                    element.style.left = `${x}px`;
-                    element.style.top = `${y}px`;
-                    
-                    // تحديث موقع الشخص في البيانات
-                    person.x = x;
-                    person.y = y;
-                }
-            }
-            
-            function stopDrag() {
-                isDragging = false;
-                document.removeEventListener('mousemove', drag);
-                document.removeEventListener('mouseup', stopDrag);
-                
-                // حفظ التغييرات
-                saveTreeToStorage();
-            }
-        }
-        
-        // عرض خيارات الفرد
-        function showPersonOptions(personId, element) {
-            // إزالة أي قوائم موجودة مسبقًا
-            const existingMenu = document.querySelector('.person-options');
-            if (existingMenu) {
-                existingMenu.remove();
-            }
-            
-            // إنشاء قائمة الخيارات
-            const optionsMenu = document.createElement('div');
-            optionsMenu.className = 'person-options';
-            optionsMenu.style.left = `${element.offsetLeft + element.offsetWidth}px`;
-            optionsMenu.style.top = `${element.offsetTop}px`;
-            
-            optionsMenu.innerHTML = `
-                <div class="option" data-action="edit">تعديل</div>
-                <div class="option" data-action="delete" style="color: #dc3545;">حذف</div>
-            `;
-            
-            treeContainer.appendChild(optionsMenu);
-            
-            // إضافة مستمعي الأحداث للخيارات
-            optionsMenu.querySelectorAll('.option').forEach(option => {
-                option.addEventListener('click', function() {
-                    const action = this.getAttribute('data-action');
-                    
-                    if (action === 'edit') {
-                        openEditPersonModal(personId);
-                    } else if (action === 'delete') {
-                        openConfirmModal(personId);
-                    }
-                    
-                    optionsMenu.remove();
-                });
-            });
-            
-            // إغلاق القائمة عند النقر في أي مكان آخر
-            setTimeout(() => {
-                document.addEventListener('click', function closeMenu() {
-                    optionsMenu.remove();
-                    document.removeEventListener('click', closeMenu);
-                });
-            }, 0);
-        }
-        
-        // رسم الموصلات بين الأفراد
-        function renderConnectors() {
-            // هذه دالة مبسطة لرسم الموصلات
-            // في تطبيق حقيقي، ستحتاج إلى خوارزمية أكثر تعقيدًا لربط الأفراد
-            
-            // مثال على موصل رأسي
-            if (familyTree.length > 0) {
-                const verticalConnector = document.createElement('div');
-                verticalConnector.className = 'connector vertical';
-                verticalConnector.style.left = '50%';
-                verticalConnector.style.top = '100px';
-                verticalConnector.style.height = '200px';
-                treeContainer.appendChild(verticalConnector);
-                
-                // مثال على موصل أفقي
-                const horizontalConnector = document.createElement('div');
-                horizontalConnector.className = 'connector horizontal';
-                horizontalConnector.style.left = '30%';
-                horizontalConnector.style.top = '300px';
-                horizontalConnector.style.width = '40%';
-                treeContainer.appendChild(horizontalConnector);
-            }
-        }
-        
-        // حفظ الشجرة في التخزين المحلي
-        function saveTreeToStorage() {
-            try {
-                localStorage.setItem('familyTree', JSON.stringify(familyTree));
-                alert('تم حفظ شجرة العائلة بنجاح!');
-            } catch (e) {
-                alert('حدث خطأ أثناء حفظ الشجرة: ' + e.message);
-            }
-        }
-        
-        // تحميل الشجرة من التخزين المحلي
-        function loadTreeFromStorage() {
-            try {
-                const savedTree = localStorage.getItem('familyTree');
-                if (savedTree) {
-                    familyTree = JSON.parse(savedTree);
-                    renderFamilyTree();
-                    alert('تم تحميل شجرة العائلة بنجاح!');
-                } else {
-                    alert('لا توجد شجرة عائلة محفوظة!');
-                }
-            } catch (e) {
-                alert('حدث خطأ أثناء تحميل الشجرة: ' + e.message);
-            }
-        }
-        
-        // إعادة تعيين الشجرة
-        function resetTree() {
-            if (confirm('هل أنت متأكد من رغبتك في بدء شجرة عائلة جديدة؟ سيتم فقدان جميع البيانات الحالية.')) {
-                familyTree = [];
-                renderFamilyTree();
-                localStorage.removeItem('familyTree');
-            }
-        }
-    </script>
-</body>
+      });
+
+      // عقد
+      state.nodes.forEach(n=>{
+        const g = document.createElementNS('http://www.w3.org/2000/svg','g'); g.classList.add('node');
+        g.setAttribute('transform', `translate(${n.x},${n.y})`);
+        g.dataset.id = n.id;
+
+        // بطاقة
+        const rect = document.createElementNS('http://www.w3.org/2000/svg','rect'); rect.setAttribute('width','160'); rect.setAttribute('height','60');
+        rect.setAttribute('rx','8'); rect.setAttribute('ry','8'); rect.setAttribute('fill','#fff'); rect.setAttribute('stroke','#dceeff');
+        g.appendChild(rect);
+        const nameText = document.createElementNS('http://www.w3.org/2000/svg','text'); nameText.setAttribute('x','10'); nameText.setAttribute('y','22'); nameText.textContent = n.name; g.appendChild(nameText);
+        const metaText = document.createElementNS('http://www.w3.org/2000/svg','text'); metaText.setAttribute('x','10'); metaText.setAttribute('y','42'); metaText.setAttribute('font-size','12'); metaText.setAttribute('fill','#666'); metaText.textContent = `${n.gender} ${n.birth?('| '+n.birth):''}`; g.appendChild(metaText);
+
+        // اختيار
+        g.addEventListener('click', (e)=>{ e.stopPropagation(); selectNode(n.id); });
+
+        // قابل للسحب
+        makeDraggable(g, n);
+
+        svg.appendChild(g);
+      });
+    }
+
+    // اختيار عنصر وملء الفورم
+    function selectNode(id){
+      selectedNodeId = id; const n = state.nodes.find(x=>x.id==id);
+      nameIn.value = n.name; genderIn.value = n.gender; birthIn.value = n.birth; parentSelect.value = (n.parents[0]||'');
+    }
+
+    function clearForm(){ nameIn.value=''; genderIn.value='male'; birthIn.value=''; parentSelect.value=''; }
+
+    // سحب العقدة
+    function makeDraggable(g, node){
+      let offsetX=0, offsetY=0, dragging=false;
+      const onDown = (evt)=>{
+        dragging=true; svg.style.cursor='grabbing';
+        const pt = getEventPoint(evt);
+        offsetX = pt.x - node.x; offsetY = pt.y - node.y;
+      };
+      const onMove = (evt)=>{ if(!dragging) return; const pt = getEventPoint(evt); node.x = pt.x - offsetX; node.y = pt.y - offsetY; g.setAttribute('transform', `translate(${node.x},${node.y})`); // إعادة رسم الخطوط بآخر موقع أثناء السحب
+        // سهلنا: إعادة رسم كل شيء
+        redrawLinesOnly(); };
+      const onUp = ()=>{ dragging=false; svg.style.cursor='default'; refreshUI(); };
+      g.addEventListener('pointerdown', onDown);
+      window.addEventListener('pointermove', onMove);
+      window.addEventListener('pointerup', onUp);
+    }
+
+    function getEventPoint(evt){
+      const rect = svg.getBoundingClientRect(); return { x: evt.clientX - rect.left + svg.parentElement.scrollLeft, y: evt.clientY - rect.top + svg.parentElement.scrollTop };
+    }
+
+    function redrawLinesOnly(){
+      // إزالة الخطوط (العناصر من نوع line)
+      const lines = Array.from(svg.querySelectorAll('line')); lines.forEach(l=>l.remove());
+      state.nodes.forEach(n=>{
+        n.parents.forEach(pid=>{
+          const p = state.nodes.find(x=>x.id==pid); if(!p) return;
+          const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+          line.setAttribute('x1', p.x+80); line.setAttribute('y1', p.y+30);
+          line.setAttribute('x2', n.x+20); line.setAttribute('y2', n.y+15);
+          line.setAttribute('stroke','#9fb7e6'); line.setAttribute('stroke-width','2'); svg.insertBefore(line, svg.firstChild);
+        });
+      });
+      // تحديث مواقع العقد فقط
+      state.nodes.forEach(n=>{
+        const g = svg.querySelector(`g.node[data-id='${n.id}']`);
+        if(g) g.setAttribute('transform', `translate(${n.x},${n.y})`);
+      });
+    }
+
+    // أي ضغط خارجي يلغي الاختيار
+    document.body.addEventListener('click', ()=>{ selectedNodeId = null; clearForm(); });
+
+    // بدأ ببيانات مثال
+    addNode('الوالد: حسن', 'male', '1960');
+    addNode('الوالدة: فاطمة', 'female', '1965');
+    addNode('الابن: علي', 'male', '1990', 1);
+    addNode('الابنة: سارة', 'female', '1993', 2);
+
+    refreshUI();
+  </script></body>
     </html>
