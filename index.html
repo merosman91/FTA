@@ -8,7 +8,6 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
-    <!-- إضافة مكتبة D3.js -->
     <script src="https://d3js.org/d3.v7.min.js"></script>
 </head>
 <body>
@@ -28,7 +27,6 @@
             <span>المتعاونون:</span>
             <div class="collaborator-list">
                 <div class="collaborator">أنت</div>
-                <!-- سيتم إضافة المتعاونين الآخرين ديناميكيًا -->
             </div>
         </div>
     </header>
@@ -42,7 +40,6 @@
         <svg id="tree-svg" width="100%" height="100%" style="display: none;"></svg>
     </main>
 
-    <!-- نافذة إضافة/تعديل فرد -->
     <div id="member-modal" class="modal">
         <div class="modal-content">
             <span class="close-btn">&times;</span>
@@ -51,12 +48,10 @@
                 <input type="hidden" id="member-id" name="member-id">
                 <div class="form-group">
                     <label for="name">الاسم الكامل</label>
-                    <!-- تمت إضافة name="name" -->
                     <input type="text" id="name" name="name" required>
                 </div>
                 <div class="form-group">
                     <label for="gender">النوع</label>
-                    <!-- تمت إضافة name="gender" -->
                     <select id="gender" name="gender" required>
                         <option value="male">ذكر</option>
                         <option value="female">أنثى</option>
@@ -64,34 +59,28 @@
                 </div>
                 <div class="form-group">
                     <label for="birth-year">سنة الميلاد</label>
-                    <!-- تمت إضافة name="birth-year" -->
                     <input type="number" id="birth-year" name="birth-year" placeholder="مثال: 1950">
                 </div>
                 <div class="form-group">
                     <label for="death-year">سنة الوفاة (إن وجدت)</label>
-                    <!-- تمت إضافة name="death-year" -->
                     <input type="number" id="death-year" name="death-year" placeholder="مثال: 2020">
                 </div>
                 <div class="form-group">
                     <label for="photo">صورة شخصية</label>
-                    <!-- تمت إضافة name="photo" -->
                     <input type="file" id="photo" name="photo" accept="image/*">
                 </div>
                 <div class="form-group">
                     <label for="story">القصة / ملاحظات</label>
-                    <!-- تمت إضافة name="story" -->
                     <textarea id="story" name="story" rows="4" placeholder="أضف قصة أو ذكرى جميلة عن هذا الشخص..."></textarea>
                 </div>
                 <div class="form-group" id="relation-group">
                     <label for="relation-to">صلة القرابة</label>
-                    <!-- تمت إضافة name="relation-to" -->
                     <select id="relation-to" name="relation-to">
                         <option value="">-- لا شيء (جذر الشجرة) --</option>
                     </select>
                 </div>
                 <div class="form-group" id="relation-type-group">
                     <label for="relation-type">نوع العلاقة</label>
-                    <!-- تمت إضافة name="relation-type" -->
                     <select id="relation-type" name="relation-type">
                         <option value="father">أب</option>
                         <option value="mother">أم</option>
@@ -105,7 +94,6 @@
         </div>
     </div>
 
-    <!-- نافذة عرض تفاصيل الفرد -->
     <div id="details-modal" class="modal">
         <div class="modal-content details-modal-content">
             <span class="close-btn">&times;</span>
@@ -129,4 +117,4 @@
 
     <script src="script.js"></script>
 </body>
-                        </html>
+                </html>
