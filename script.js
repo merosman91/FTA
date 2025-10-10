@@ -37,12 +37,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const innerWidth = width - margin.left - margin.right;
         const innerHeight = height - margin.top - margin.bottom;
 
-        // تحديث حجم تخطيط D3
         treeLayout = d3.tree().size([innerHeight, innerWidth]);
-        
-        // تحديث أبعاد الـ SVG
         svg.attr("width", width).attr("height", height);
-        svg.select("g").attr("transform", `translate(${margin.left},${margin.top})`);
     }
 
     // --- 4. دوال مساعدة ---
@@ -68,10 +64,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- 5. دالة رسم الشجرة ---
+    // --- 5. دالة رسم الشجرة (تم تحديثها بالكامل) ---
     function renderTree() {
         svg.selectAll("*").remove();
-        updateDimensions(); // تحديث الأبعاد في كل مرة نرسم فيها
+        updateDimensions();
+
+        const margin = {top: 50, right: 50, bottom: 50, left: 50};
+        const width = +svg.attr("width");
+        const height = +svg.attr("height");
 
         const g = svg.append("g");
 
@@ -79,6 +79,10 @@ document.addEventListener('DOMContentLoaded', () => {
             .id(d => d.id)
             .parentId(d => d.parentId)
             (familyData.members);
+
+        if (!hierarchyData || !hierarchyData.descendants().length) {
+            return;
+        }
 
         const treeNodes = treeLayout(hierarchyData);
         const treeLinks = treeNodes.links();
@@ -112,6 +116,13 @@ document.addEventListener('DOMContentLoaded', () => {
             .style("stroke", "#2c3e50").style("stroke-width", 3);
 
         node.append("text").attr("dy", 50).style("text-anchor", "middle").text(d => d.data.name);
+
+        // --- منطق التوسيط الجديد ---
+        const treeBoundingBox = g.node().getBBox();
+        const dx = (width - treeBoundingBox.width) / 2 - treeBoundingBox.x;
+        const dy = (height - treeBoundingBox.height) / 2 - treeBoundingBox.y;
+        const finalTransform = `translate(${dx + margin.left}, ${dy + margin.top})`;
+        g.attr("transform", finalTransform);
     }
 
     // --- 6. دوال النوافذ المنبثقة ---
@@ -182,10 +193,6 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
         const formData = new FormData(memberForm);
         
-        // --- أداة تصحيح للأخطاء ---
-        // يمكنك فتح وحدة التحكم (Console) في متصفح كروم على الهاتف (إذا كانت مفعلة) لرؤية هذه الرسالة
-        console.log("بيانات النموذج:", Object.fromEntries(formData.entries()));
-
         const name = formData.get('name');
         const gender = formData.get('gender');
         const birthYear = parseInt(formData.get('birth-year')) || null;
