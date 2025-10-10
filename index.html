@@ -48,43 +48,51 @@
             <span class="close-btn">&times;</span>
             <h2 id="modal-title">إضافة فرد جديد</h2>
             <form id="member-form">
-                <input type="hidden" id="member-id">
+                <input type="hidden" id="member-id" name="member-id">
                 <div class="form-group">
                     <label for="name">الاسم الكامل</label>
-                    <input type="text" id="name" required>
+                    <!-- تمت إضافة name="name" -->
+                    <input type="text" id="name" name="name" required>
                 </div>
                 <div class="form-group">
                     <label for="gender">النوع</label>
-                    <select id="gender" required>
+                    <!-- تمت إضافة name="gender" -->
+                    <select id="gender" name="gender" required>
                         <option value="male">ذكر</option>
                         <option value="female">أنثى</option>
                     </select>
                 </div>
                 <div class="form-group">
                     <label for="birth-year">سنة الميلاد</label>
-                    <input type="number" id="birth-year" placeholder="مثال: 1950">
+                    <!-- تمت إضافة name="birth-year" -->
+                    <input type="number" id="birth-year" name="birth-year" placeholder="مثال: 1950">
                 </div>
                 <div class="form-group">
                     <label for="death-year">سنة الوفاة (إن وجدت)</label>
-                    <input type="number" id="death-year" placeholder="مثال: 2020">
+                    <!-- تمت إضافة name="death-year" -->
+                    <input type="number" id="death-year" name="death-year" placeholder="مثال: 2020">
                 </div>
                 <div class="form-group">
                     <label for="photo">صورة شخصية</label>
-                    <input type="file" id="photo" accept="image/*">
+                    <!-- تمت إضافة name="photo" -->
+                    <input type="file" id="photo" name="photo" accept="image/*">
                 </div>
                 <div class="form-group">
                     <label for="story">القصة / ملاحظات</label>
-                    <textarea id="story" rows="4" placeholder="أضف قصة أو ذكرى جميلة عن هذا الشخص..."></textarea>
+                    <!-- تمت إضافة name="story" -->
+                    <textarea id="story" name="story" rows="4" placeholder="أضف قصة أو ذكرى جميلة عن هذا الشخص..."></textarea>
                 </div>
                 <div class="form-group" id="relation-group">
                     <label for="relation-to">صلة القرابة</label>
-                    <select id="relation-to">
+                    <!-- تمت إضافة name="relation-to" -->
+                    <select id="relation-to" name="relation-to">
                         <option value="">-- لا شيء (جذر الشجرة) --</option>
                     </select>
                 </div>
                 <div class="form-group" id="relation-type-group">
                     <label for="relation-type">نوع العلاقة</label>
-                    <select id="relation-type">
+                    <!-- تمت إضافة name="relation-type" -->
+                    <select id="relation-type" name="relation-type">
                         <option value="father">أب</option>
                         <option value="mother">أم</option>
                         <option value="son">ابن</option>
@@ -119,6 +127,6 @@
         </div>
     </div>
 
-    <script src="app.js"></script>
+    <script src="script.js"></script>
 </body>
-                                                       </html>
+                        </html>
