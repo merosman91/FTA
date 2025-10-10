@@ -1,347 +1,296 @@
-// كائن التطبيق الرئيسي
-const FamilyTreeApp = {
-    // عناصر واجهة المستخدم
-    elements: {
-        treeDisplay: document.getElementById('treeDisplay'),
-        addPersonBtn: document.getElementById('addPersonBtn'),
-        emptyStateAddBtn: document.getElementById('emptyStateAddBtn'),
-        shareBtn: document.getElementById('shareBtn'),
-        exportBtn: document.getElementById('exportBtn'),
-        personModal: document.getElementById('personModal'),
-        shareModal: document.getElementById('shareModal'),
-        closeModal: document.getElementById('closeModal'),
-        closeShareModal: document.getElementById('closeShareModal'),
-        cancelBtn: document.getElementById('cancelBtn'),
-        personForm: document.getElementById('personForm'),
-        modalTitle: document.getElementById('modalTitle'),
-        copyLinkBtn: document.getElementById('copyLinkBtn'),
-        shareLink: document.getElementById('shareLink'),
-        toast: document.getElementById('toast'),
-        toastMessage: document.getElementById('toastMessage'),
-        personPhoto: document.getElementById('personPhoto'),
-        photoPreview: document.getElementById('photoPreview'),
-        personRelation: document.getElementById('personRelation'),
-        tooltip: document.querySelector('.tooltip')
-    },
+document.addEventListener('DOMContentLoaded', () => {
 
-    // بيانات شجرة العائلة
-    familyTree: {
-        nodes: [],
-        links: []
-    },
+    // --- 1. هيكل البيانات ---
+    // في تطبيق حقيقي، هذه البيانات ستأتي من قاعدة البيانات (API)
+    let familyData = {
+        members: [
+            { id: 1, name: 'أحمد علي', gender: 'male', birthYear: 1950, parentId: null },
+            { id: 2, name: 'فاطمة محمد', gender: 'female', birthYear: 1955, parentId: null, spouseId: 1 },
+            { id: 3, name: 'خالد أحمد', gender: 'male', birthYear: 1975, parentId: 1 },
+            { id: 4, name: 'مريم أحمد', gender: 'female', birthYear: 1978, parentId: 1 },
+            { id: 5, name: 'نورة خالد', gender: 'female', birthYear: 2005, parentId: 3 },
+        ],
+        nextId: 6
+    };
 
-    // الحالة الحالية
-    state: {
-        currentPerson: null,
-        currentParentId: null,
-        currentPhotoData: null,
-        pendingSpouseFor: null
-    },
+    // --- 2. عناصر DOM ---
+    const svg = document.getElementById('tree-svg');
+    const addMemberBtn = document.getElementById('add-member-btn');
+    const memberModal = document.getElementById('member-modal');
+    const detailsModal = document.getElementById('details-modal');
+    const memberForm = document.getElementById('member-form');
+    const modalTitle = document.getElementById('modal-title');
+    const relationToSelect = document.getElementById('relation-to');
+    const closeBtns = document.querySelectorAll('.close-btn');
+    const editMemberBtn = document.getElementById('edit-member-btn');
+    const deleteMemberBtn = document.getElementById('delete-member-btn');
 
-    // تهيئة التطبيق
-    init() {
-        this.bindEvents();
-        this.loadFromLocalStorage();
-        this.checkShareLink();
-    },
+    let currentEditingMember = null;
+    let currentViewingMember = null;
 
-    // ربط الأحداث
-    bindEvents() {
-        this.elements.addPersonBtn.addEventListener('click', () => this.openPersonModal());
-        this.elements.emptyStateAddBtn.addEventListener('click', () => this.openPersonModal());
-        this.elements.shareBtn.addEventListener('click', () => this.openShareModal());
-        this.elements.exportBtn.addEventListener('click', () => this.exportTree());
-        this.elements.closeModal.addEventListener('click', () => this.closePersonModal());
-        this.elements.closeShareModal.addEventListener('click', () => this.elements.shareModal.style.display = 'none');
-        this.elements.cancelBtn.addEventListener('click', () => this.closePersonModal());
-        this.elements.copyLinkBtn.addEventListener('click', () => this.copyShareLink());
-        this.elements.personForm.addEventListener('submit', (e) => this.savePerson(e));
-        this.elements.personPhoto.addEventListener('change', (e) => this.handlePhotoSelect(e));
-    },
+    // --- 3. دوال مساعدة ---
+    function findMember(id) {
+        return familyData.members.find(m => m.id === id);
+    }
 
-    // التعامل مع اختيار الصورة
-    handlePhotoSelect(e) {
-        const file = e.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                this.state.currentPhotoData = event.target.result;
-                this.elements.photoPreview.src = this.state.currentPhotoData;
-                this.elements.photoPreview.style.display = 'block';
-            };
-            reader.readAsDataURL(file);
-        } else {
-            this.elements.photoPreview.style.display = 'none';
-            this.state.currentPhotoData = null;
-        }
-    },
+    function getChildren(parentId) {
+        return familyData.members.filter(m => m.parentId === parentId);
+    }
 
-    // فتح نافذة إضافة/تعديل شخص
-    openPersonModal(personId = null, parentId = null, relationType = null) {
-        this.state.currentPerson = personId;
-        this.state.currentParentId = parentId;
-        this.state.currentPhotoData = null;
+    function getSpouse(memberId) {
+        const member = findMember(memberId);
+        if (!member || !member.spouseId) return null;
+        return findMember(member.spouseId);
+    }
+
+    // --- 4. دالة رسم الشجرة ---
+    function renderTree() {
+        svg.innerHTML = ''; // مسح الشجرة الحالية
         
-        // إعادة تعيين النموذج
-        this.elements.personForm.reset();
-        this.elements.photoPreview.style.display = 'none';
+        const nodeWidth = 150;
+        const nodeHeight = 100;
+        const verticalGap = 120;
+
+        // حساب مواضع العقد بشكل بسيط (هرمي)
+        const rootMembers = familyData.members.filter(m => !m.parentId);
+        let currentY = 50;
         
-        if (personId) {
-            // تعديل شخص موجود
-            const person = this.familyTree.nodes.find(n => n.id === personId);
-            if (person) {
-                this.elements.modalTitle.innerHTML = '<i class="fas fa-user-edit"></i> تعديل بيانات الشخص';
-                document.getElementById('personName').value = person.name;
-                document.getElementById('personGender').value = person.gender;
-                document.getElementById('personBirthDate').value = person.birthDate || '';
-                document.getElementById('personDeathDate').value = person.deathDate || '';
-                document.getElementById('personNotes').value = person.notes || '';
-                
-                if (person.photo) {
-                    this.elements.photoPreview.src = person.photo;
-                    this.elements.photoPreview.style.display = 'block';
-                    this.state.currentPhotoData = person.photo;
-                }
-            }
-        } else {
-            // إضافة شخص جديد
-            this.elements.modalTitle.innerHTML = '<i class="fas fa-user-plus"></i> إضافة شخص جديد';
-            
-            // إذا كان هناك نوع علاقة محدد، قم بتعيينه
-            if (relationType) {
-                document.getElementById('personRelation').value = relationType;
-            }
+        rootMembers.forEach(root => {
+            const subtreeLayout = calculateSubtreeLayout(root, nodeWidth, verticalGap);
+            drawSubtree(root, subtreeLayout, 400, currentY);
+            currentY += subtreeLayout.height + verticalGap * 2;
+        });
+    }
+    
+    function calculateSubtreeLayout(member, nodeWidth, verticalGap) {
+        const children = getChildren(member.id);
+        if (children.length === 0) {
+            return { width: nodeWidth, height: verticalGap };
         }
         
-        this.elements.personModal.style.display = 'flex';
-    },
+        let totalWidth = 0;
+        let maxHeight = 0;
+        children.forEach(child => {
+            const layout = calculateSubtreeLayout(child, nodeWidth, verticalGap);
+            totalWidth += layout.width;
+            maxHeight = Math.max(maxHeight, layout.height);
+        });
+        
+        return { width: Math.max(nodeWidth, totalWidth), height: maxHeight + verticalGap };
+    }
 
-    // إغلاق نافذة الشخص
-    closePersonModal() {
-        this.elements.personModal.style.display = 'none';
-        this.state.pendingSpouseFor = null;
-    },
-
-    // حفظ بيانات الشخص
-    savePerson(e) {
-        e.preventDefault();
-        
-        const name = document.getElementById('personName').value;
-        const gender = document.getElementById('personGender').value;
-        const birthDate = document.getElementById('personBirthDate').value;
-        const deathDate = document.getElementById('personDeathDate').value;
-        const relation = document.getElementById('personRelation').value;
-        const notes = document.getElementById('personNotes').value;
-        
-        // التحقق من الحقول المطلوبة
-        if (!name || !gender) {
-            this.showToast('يرجى ملء الحقول المطلوبة');
-            return;
-        }
-        
-        if (this.state.currentPerson) {
-            // تحديث شخص موجود
-            const personIndex = this.familyTree.nodes.findIndex(n => n.id === this.state.currentPerson);
-            if (personIndex !== -1) {
-                this.familyTree.nodes[personIndex] = {
-                    ...this.familyTree.nodes[personIndex],
-                    name,
-                    gender,
-                    birthDate,
-                    deathDate,
-                    notes,
-                    photo: this.state.currentPhotoData || this.familyTree.nodes[personIndex].photo
-                };
-                this.showToast('تم تحديث بيانات الشخص بنجاح');
-            }
-        } else {
-            // إضافة شخص جديد
-            const id = 'person_' + Date.now();
-            const newPerson = {
-                id,
-                name,
-                gender,
-                birthDate,
-                deathDate,
-                notes,
-                photo: this.state.currentPhotoData
-            };
-            
-            this.familyTree.nodes.push(newPerson);
-            
-            // إضافة الروابط بناءً على العلاقة
-            if (relation === 'husband' || relation === 'wife') {
-                // إضافة رابط زواج
-                if (this.state.pendingSpouseFor) {
-                    this.familyTree.links.push({
-                        source: this.state.pendingSpouseFor,
-                        target: id,
-                        type: 'marriage'
-                    });
-                    this.state.pendingSpouseFor = null;
-                }
-            } else if (this.state.currentParentId) {
-                // إضافة كابن لشخص موجود
-                this.familyTree.links.push({
-                    source: this.state.currentParentId,
-                    target: id,
-                    type: 'parent'
-                });
-            } else if (relation && this.familyTree.nodes.length > 1) {
-                // إضافة بناءً على العلاقة
-                this.handleRelation(relation, id);
-            }
-            
-            this.showToast('تمت إضافة الشخص بنجاح');
-            
-            // إذا كان هذا هو أول شخص، اعرض خيارات الزوج/الزوجة
-            if (this.familyTree.nodes.length === 1) {
-                setTimeout(() => {
-                    this.showSpouseOptions(id);
-                }, 500);
-            }
-        }
-        
-        this.closePersonModal();
-        this.renderTree();
-        this.saveToLocalStorage();
-    },
-
-    // عرض شجرة العائلة
-    renderTree() {
-        // إفراغ الحاوية
-        d3.select("#treeDisplay").selectAll("*").remove();
-        
-        if (this.familyTree.nodes.length === 0) {
-            this.elements.treeDisplay.innerHTML = `
-                <div class="empty-state">
-                    <i class="fas fa-sitemap"></i>
-                    <h3>ابدأ بإنشاء شجرة عائلتك</h3>
-                    <p>أضف الشخص الأول لتبدأ رحلة بناء شجرة عائلتك</p>
-                    <button class="btn" id="emptyStateAddBtn">
-                        <i class="fas fa-user-plus"></i> إضافة شخص جديد
-                    </button>
-                </div>
-            `;
-            document.getElementById('emptyStateAddBtn').addEventListener('click', () => this.openPersonModal());
-            return;
-        }
-        
-        // إعداد SVG
-        const container = d3.select("#treeDisplay");
-        const width = container.node().getBoundingClientRect().width;
-        const height = 600;
-        
-        const svg = container.append("svg")
-            .attr("width", width)
-            .attr("height", height);
-        
-        // إضافة مجموعة للرسم مع ترجمة
-        const g = svg.append("g")
-            .attr("transform", "translate(40,40)");
-        
-        // إنشاء تخطيط الشجرة
-        const treeLayout = d3.tree()
-            .size([height - 80, width - 200])
-            .separation((a, b) => (a.parent === b.parent ? 1 : 2) / a.depth);
-        
-        // تحويل البيانات إلى هيكل شجرة
-        const root = d3.stratify()
-            .id(d => d.id)
-            .parentId(d => {
-                const link = this.familyTree.links.find(l => l.target === d.id && l.type === 'parent');
-                return link ? link.source : null;
-            })(this.familyTree.nodes);
-        
-        // حساب المواقع
-        treeLayout(root);
-        
-        // رسم الروابط
-        g.selectAll(".link")
-            .data(root.links())
-            .enter().append("path")
-            .attr("class", "link parent")
-            .attr("d", d3.linkHorizontal()
-                .x(d => d.y)
-                .y(d => d.x));
-        
-        // رسم العقد
-        const node = g.selectAll(".node")
-            .data(root.descendants())
-            .enter().append("g")
-            .attr("class", d => `node ${d.data.gender}`)
-            .attr("transform", d => `translate(${d.y},${d.x})`)
-            .on("click", (event, d) => {
-                event.stopPropagation();
-                this.openPersonModal(d.data.id);
+    function drawSubtree(member, layout, x, y) {
+        // رسم خطوط الأبناء أولاً (حتى تكون تحت العقد)
+        const children = getChildren(member.id);
+        if (children.length > 0) {
+            const childY = y + 100;
+            let childX = x - (layout.width / 2) + (layout.width / children.length) / 2;
+            children.forEach(child => {
+                const childLayout = calculateSubtreeLayout(child, 150, 120);
+                drawLine(x, y + 30, childX, childY - 30);
+                drawSubtree(child, childLayout, childX, childY);
+                childX += childLayout.width;
             });
-        
-        // إضافة الدوائر للعقد
-        node.append("circle")
-            .attr("r", 25);
-        
-        // إضافة النصوص
-        node.append("text")
-            .attr("dy", 40)
-            .style("text-anchor", "middle")
-            .style("font-weight", "bold")
-            .style("font-size", "12px")
-            .text(d => d.data.name);
-        
-        // إضافة إمكانية السحب والتحريك
-        const zoom = d3.zoom()
-            .scaleExtent([0.1, 4])
-            .on("zoom", (event) => {
-                g.attr("transform", event.transform);
-            });
-        
-        svg.call(zoom);
-    },
-
-    // عرض رسالة إشعار
-    showToast(message) {
-        this.elements.toastMessage.textContent = message;
-        this.elements.toast.classList.add('show');
-        
-        setTimeout(() => {
-            this.elements.toast.classList.remove('show');
-        }, 3000);
-    },
-
-    // حفظ البيانات في التخزين المحلي
-    saveToLocalStorage() {
-        try {
-            localStorage.setItem('familyTree', JSON.stringify(this.familyTree));
-        } catch (e) {
-            console.error('Error saving to localStorage:', e);
         }
-    },
-
-    // تحميل البيانات من التخزين المحلي
-    loadFromLocalStorage() {
-        try {
-            const savedTree = localStorage.getItem('familyTree');
-            if (savedTree) {
-                this.familyTree = JSON.parse(savedTree);
-                this.renderTree();
+        
+        // رسم خط الزوجين
+        const spouse = getSpouse(member.id);
+        if (spouse) {
+            // تجنب رسم الزوج مرتين
+            if (member.gender === 'male') {
+                drawLine(x + 30, y, x + 60, y); // خط أفقي قصير
+                drawNode(spouse, x + 90, y);
             }
-        } catch (e) {
-            console.error('Error loading saved tree:', e);
         }
-    },
 
-    // التحقق من وجود رابط مشاركة
-    checkShareLink() {
-        const urlParams = new URLSearchParams(window.location.search);
-        const shareToken = urlParams.get('share');
+        // رسم العقدة الحالية
+        drawNode(member, x, y);
+    }
+
+    function drawNode(member, x, y) {
+        const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        g.classList.add('person-node', member.gender);
+        g.setAttribute('transform', `translate(${x}, ${y})`);
+        g.setAttribute('data-id', member.id);
+
+        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        circle.setAttribute('r', '30');
+        circle.setAttribute('cx', '0');
+        circle.setAttribute('cy', '0');
+
+        const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        text.setAttribute('y', '5');
+        text.textContent = member.name;
+
+        g.appendChild(circle);
+        g.appendChild(text);
+        svg.appendChild(g);
+
+        g.addEventListener('click', () => showDetails(member.id));
+    }
+    
+    function drawLine(x1, y1, x2, y2) {
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        const midY = (y1 + y2) / 2;
+        line.setAttribute('d', `M ${x1} ${y1} C ${x1} ${midY}, ${x2} ${midY}, ${x2} ${y2}`);
+        line.classList.add('tree-link');
+        svg.appendChild(line);
+    }
+
+
+    // --- 5. دوال النوافذ المنبثقة ---
+    function openModal(modal) {
+        modal.style.display = 'block';
+    }
+
+    function closeModal(modal) {
+        modal.style.display = 'none';
+        memberForm.reset();
+        currentEditingMember = null;
+        currentViewingMember = null;
+    }
+
+    function populateRelationSelect() {
+        relationToSelect.innerHTML = '<option value="">-- لا شيء (جذر الشجرة) --</option>';
+        familyData.members.forEach(member => {
+            const option = document.createElement('option');
+            option.value = member.id;
+            option.textContent = member.name;
+            relationToSelect.appendChild(option);
+        });
+    }
+
+    function showDetails(memberId) {
+        const member = findMember(memberId);
+        if (!member) return;
+
+        currentViewingMember = member;
+        document.getElementById('details-name').textContent = member.name;
+        const info = [
+            `النوع: ${member.gender === 'male' ? 'ذكر' : 'أنثى'}`,
+            `سنة الميلاد: ${member.birthYear || 'غير محدد'}`
+        ];
+        document.getElementById('details-info').innerHTML = info.join('<br>');
+        openModal(detailsModal);
+    }
+
+    function openAddModal() {
+        modalTitle.textContent = 'إضافة فرد جديد';
+        document.getElementById('relation-group').style.display = 'block';
+        document.getElementById('relation-type-group').style.display = 'block';
+        populateRelationSelect();
+        openModal(memberModal);
+    }
+
+    function openEditModal(memberId) {
+        const member = findMember(memberId);
+        if (!member) return;
+
+        currentEditingMember = member;
+        modalTitle.textContent = 'تعديل بيانات الفرد';
+        document.getElementById('member-id').value = member.id;
+        document.getElementById('name').value = member.name;
+        document.getElementById('gender').value = member.gender;
+        document.getElementById('birth-year').value = member.birthYear || '';
         
-        if (shareToken) {
-            this.showToast('تم تحميل شجرة عائلة مشتركة');
+        // إخفاء حقول العلاقة عند التعديل
+        document.getElementById('relation-group').style.display = 'none';
+        document.getElementById('relation-type-group').style.display = 'none';
+
+        openModal(memberModal);
+    }
+    
+    function deleteMember(memberId) {
+        if (confirm('هل أنت متأكد من حذف هذا الفرد؟ سؤؤثر على الأبناء المرتبطين به.')) {
+            // حذف الأبناء أولاً (أو يمكنك إعادة ربطهم بجد آخر)
+            const children = getChildren(memberId);
+            children.forEach(child => child.parentId = null);
+
+            // حذف الزوج/ة
+            const member = findMember(memberId);
+            if(member.spouseId) {
+                const spouse = findMember(member.spouseId);
+                if(spouse) spouse.spouseId = null;
+            }
+
+            // حذف العضو نفسه
+            familyData.members = familyData.members.filter(m => m.id !== memberId);
+            
+            closeModal(detailsModal);
+            renderTree();
         }
     }
-};
 
-// بدء التطبيق عند تحميل الصفحة
-document.addEventListener('DOMContentLoaded', function() {
-    FamilyTreeApp.init();
+
+    // --- 6. معالجات الأحداث (Event Listeners) ---
+    addMemberBtn.addEventListener('click', openAddModal);
+
+    memberForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const formData = new FormData(memberForm);
+        const name = formData.get('name');
+        const gender = formData.get('gender');
+        const birthYear = formData.get('birth-year');
+        const relationToId = parseInt(formData.get('relation-to'));
+        const relationType = formData.get('relation-type');
+
+        if (currentEditingMember) {
+            // منطق التعديل
+            const member = findMember(currentEditingMember.id);
+            member.name = name;
+            member.gender = gender;
+            member.birthYear = parseInt(birthYear) || null;
+        } else {
+            // منطق الإضافة
+            const newMember = {
+                id: familyData.nextId++,
+                name,
+                gender,
+                birthYear: parseInt(birthYear) || null,
+                parentId: null,
+                spouseId: null
+            };
+
+            if (relationToId) {
+                const relative = findMember(relationToId);
+                if (relationType === 'spouse') {
+                    newMember.spouseId = relationToId;
+                    relative.spouseId = newMember.id;
+                } else {
+                    newMember.parentId = relationToId;
+                }
+            }
+            familyData.members.push(newMember);
+        }
+
+        closeModal(memberModal);
+        renderTree();
+    });
+
+    editMemberBtn.addEventListener('click', () => {
+        if (currentViewingMember) {
+            closeModal(detailsModal);
+            openEditModal(currentViewingMember.id);
+        }
+    });
+
+    deleteMemberBtn.addEventListener('click', () => {
+        if (currentViewingMember) {
+            deleteMember(currentViewingMember.id);
+        }
+    });
+
+    closeBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            closeModal(btn.closest('.modal'));
+        });
+    });
+
+    window.addEventListener('click', (e) => {
+        if (e.target === memberModal) closeModal(memberModal);
+        if (e.target === detailsModal) closeModal(detailsModal);
+    });
+
+    // --- 7. التشغيل الأولي ---
+    renderTree();
 });
