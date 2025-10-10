@@ -1,282 +1,82 @@
-<!doctype html>
-
+<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>تطبيق شجرة العائلة — ملف واحد</title>
-  <style>
-    :root{--bg:#f7f9fc;--card:#fff;--accent:#f6a623;--muted:#666}
-    html,body{height:100%;margin:0;font-family:Tahoma,Arial,helvetica,sans-serif;background:var(--bg);color:#111}
-    .app{max-width:1100px;margin:20px auto;padding:18px}
-    header{display:flex;gap:16px;align-items:center;margin-bottom:12px}
-    header h1{font-size:20px;margin:0}
-    .layout{display:grid;grid-template-columns:320px 1fr;gap:16px}
-    .panel{background:var(--card);border-radius:10px;padding:12px;box-shadow:0 4px 10px rgba(0,0,0,0.05)}
-    label{display:block;margin-top:8px;font-size:13px;color:var(--muted)}
-    input,select,button,textarea{width:100%;padding:8px;margin-top:6px;border:1px solid #ddd;border-radius:6px;font-size:14px}
-    button{cursor:pointer;background:var(--accent);color:#fff;border:none}
-    .small{display:flex;gap:8px}
-    .tree-area{height:720px;overflow:auto;padding:10px}
-    svg{background:linear-gradient(180deg, rgba(246,166,35,0.03), transparent)}
-    .node{cursor:grab}
-    .node rect{fill:#fff;stroke:#dbe7fb;stroke-width:1;rx:8}
-    .node text{font-size:13px;pointer-events:none}
-    .controls{display:flex;gap:8px;margin-top:8px}
-    .muted{color:var(--muted);font-size:13px}
-    footer{margin-top:12px;font-size:13px;color:var(--muted)}
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تطبيق "أصلي" - شجرة العائلة</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
 </head>
 <body>
-  <div class="app">
-    <header>
-      <h1>تطبيق شجرة العائلة (ملف واحد)</h1>
-      <div class="muted">أضف أشخاصًا، حدِّد آباء، حرِّك العقد، حمّل واحفظ الشجرة كملف JSON أو SVG</div>
-    </header><div class="layout">
-  <div class="panel">
-    <h3>إضافة / تعديل شخص</h3>
-    <input id="personName" placeholder="الاسم الكامل" />
-    <label>الجنس</label>
-    <select id="personGender"><option value="male">ذكر</option><option value="female">أنثى</option><option value="other">آخر</option></select>
-    <label>سنة الميلاد (اختياري)</label>
-    <input id="personBirth" placeholder="مثال: 1985" />
 
-    <label>اختر أحد الوالدين لربطه (اختياري)</label>
-    <select id="parentSelect"><option value="">-- لا يربط الآن --</option></select>
+    <header class="app-header">
+        <h1>أصلي</h1>
+        <p>شجرة عائلتك الرقمية</p>
+        <button id="add-member-btn">➕ إضافة فرد للعائلة</button>
+    </header>
 
-    <div style="display:flex;gap:8px;margin-top:10px">
-      <button id="addPersonBtn">إضافة شخص</button>
-      <button id="updatePersonBtn" style="background:#4caf50">تحديث</button>
-      <button id="deletePersonBtn" style="background:#e74c3c">حذف الشخص</button>
+    <main class="tree-container">
+        <svg id="tree-svg" width="100%" height="100%"></svg>
+    </main>
+
+    <!-- نافذة إضافة/تعديل فرد -->
+    <div id="member-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <h2 id="modal-title">إضافة فرد جديد</h2>
+            <form id="member-form">
+                <input type="hidden" id="member-id">
+                <div class="form-group">
+                    <label for="name">الاسم الكامل</label>
+                    <input type="text" id="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="gender">النوع</label>
+                    <select id="gender" required>
+                        <option value="male">ذكر</option>
+                        <option value="female">أنثى</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="birth-year">سنة الميلاد</label>
+                    <input type="number" id="birth-year" placeholder="مثال: 1950">
+                </div>
+                <div class="form-group" id="relation-group">
+                    <label for="relation-to">صلة القرابة</label>
+                    <select id="relation-to">
+                        <option value="">-- لا شيء (جذر الشجرة) --</option>
+                    </select>
+                </div>
+                <div class="form-group" id="relation-type-group">
+                    <label for="relation-type">نوع العلاقة</label>
+                    <select id="relation-type">
+                        <option value="father">أب</option>
+                        <option value="mother">أم</option>
+                        <option value="son">ابن</option>
+                        <option value="daughter">ابنة</option>
+                        <option value="spouse">زوج/زوجة</option>
+                    </select>
+                </div>
+                <button type="submit" class="submit-btn">حفظ</button>
+            </form>
+        </div>
     </div>
 
-    <hr />
-    <h3>إدارة الشجرة</h3>
-    <div class="controls">
-      <button id="downloadJson">حفظ JSON</button>
-      <button id="loadJson">تحميل JSON</button>
-      <input id="fileInput" type="file" accept="application/json" style="display:none" />
-      <button id="downloadSvg">حفظ كـ SVG</button>
-      <button id="clearTree" style="background:#999">مسح الشجرة</button>
+    <!-- نافذة عرض تفاصيل الفرد -->
+    <div id="details-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <h2 id="details-name"></h2>
+            <p id="details-info"></p>
+            <div class="details-actions">
+                <button id="edit-member-btn">✏️ تعديل</button>
+                <button id="delete-member-btn" class="danger">🗑️ حذف</button>
+            </div>
+        </div>
     </div>
 
-    <hr />
-    <div class="muted">نصائح:</div>
-    <ul>
-      <li class="muted">اسحب أي بطاقة لتعيد ترتيب الشجرة.</li>
-      <li class="muted">لتوصيل والد لطفل — أضف الطفل واختر والده عند الإنشاء أو استخدم القائمة لتعديل العلاقات.</li>
-    </ul>
-  </div>
-
-  <div class="panel tree-area">
-    <svg id="svgRoot" width="2000" height="1600" xmlns="http://www.w3.org/2000/svg"></svg>
-  </div>
-</div>
-
-<footer>ملف مفرد — انسخ هذا الملف وفتحه في المتصفح. تم التطوير بالعربية.</footer>
-
-  </div>  <script>
-    // نموذج بيانات بسيط
-    let state = { nodes: [], nextId: 1 };
-    const svg = document.getElementById('svgRoot');
-
-    // عناصر التحكم
-    const nameIn = document.getElementById('personName');
-    const genderIn = document.getElementById('personGender');
-    const birthIn = document.getElementById('personBirth');
-    const parentSelect = document.getElementById('parentSelect');
-    const addBtn = document.getElementById('addPersonBtn');
-    const updateBtn = document.getElementById('updatePersonBtn');
-    const deleteBtn = document.getElementById('deletePersonBtn');
-    const downloadJsonBtn = document.getElementById('downloadJson');
-    const loadJsonBtn = document.getElementById('loadJson');
-    const fileInput = document.getElementById('fileInput');
-    const downloadSvgBtn = document.getElementById('downloadSvg');
-    const clearTreeBtn = document.getElementById('clearTree');
-
-    let selectedNodeId = null;
-
-    function addNode(name, gender, birth, parentId){
-      const node = {
-        id: state.nextId++,
-        name: name || 'غير معروف',
-        gender: gender || 'other',
-        birth: birth || '',
-        x: Math.random()*1200 + 200,
-        y: Math.random()*800 + 50,
-        parents: parentId ? [parentId] : [],
-        children: []
-      };
-      state.nodes.push(node);
-      // ربط بالعلاقة
-      if(parentId){
-        const p = state.nodes.find(n=>n.id==parentId);
-        if(p && !p.children.includes(node.id)) p.children.push(node.id);
-      }
-      refreshUI();
-    }
-
-    addBtn.addEventListener('click', ()=>{
-      addNode(nameIn.value.trim(), genderIn.value, birthIn.value.trim(), parentSelect.value?Number(parentSelect.value):null);
-      nameIn.value=''; birthIn.value=''; parentSelect.value='';
-    });
-
-    updateBtn.addEventListener('click', ()=>{
-      if(!selectedNodeId) return alert('اختر شخصًا من الشجرة أولاً (اضغط على البطاقة)');
-      const n = state.nodes.find(x=>x.id==selectedNodeId);
-      n.name = nameIn.value.trim() || n.name;
-      n.gender = genderIn.value;
-      n.birth = birthIn.value.trim();
-      // تعديل الوالدين: سنجعل المحدد والدًا واحدًا فقط كاختصار
-      const newParent = parentSelect.value?Number(parentSelect.value):null;
-      // إزالة من آباء سابقين
-      state.nodes.forEach(node=>{ node.children = node.children.filter(c=>c!==n.id); });
-      n.parents = newParent? [newParent] : [];
-      if(newParent){
-        const p = state.nodes.find(x=>x.id==newParent);
-        if(p && !p.children.includes(n.id)) p.children.push(n.id);
-      }
-      refreshUI();
-    });
-
-    deleteBtn.addEventListener('click', ()=>{
-      if(!selectedNodeId) return alert('اختر شخصًا للحذف');
-      // إزالة الكائن
-      state.nodes = state.nodes.filter(n=>n.id!==selectedNodeId);
-      // إزالة من علاقات الآخرين
-      state.nodes.forEach(n=>{ n.children = n.children.filter(c=>c!==selectedNodeId); n.parents = n.parents.filter(p=>p!==selectedNodeId); });
-      selectedNodeId = null; clearForm(); refreshUI();
-    });
-
-    clearTreeBtn.addEventListener('click', ()=>{
-      if(!confirm('هل تريد مسح الشجرة كليًا؟')) return; state = {nodes: [], nextId:1}; refreshUI();
-    });
-
-    downloadJsonBtn.addEventListener('click', ()=>{
-      const dataStr = JSON.stringify(state, null, 2);
-      const blob = new Blob([dataStr], {type:'application/json'});
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a'); a.href = url; a.download = 'family-tree.json'; a.click(); URL.revokeObjectURL(url);
-    });
-
-    loadJsonBtn.addEventListener('click', ()=> fileInput.click());
-    fileInput.addEventListener('change', (e)=>{
-      const f = e.target.files[0]; if(!f) return;
-      const r = new FileReader(); r.onload = ()=>{
-        try{ const data = JSON.parse(r.result); if(data && Array.isArray(data.nodes)){ state = data; refreshUI(); } else alert('ملف غير صحيح'); }
-        catch(err){ alert('فشل قراءة الملف'); }
-      }; r.readAsText(f);
-    });
-
-    downloadSvgBtn.addEventListener('click', ()=>{
-      const serializer = new XMLSerializer();
-      const svgStr = serializer.serializeToString(svg);
-      const blob = new Blob([svgStr], {type:'image/svg+xml'});
-      const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href=url; a.download='family-tree.svg'; a.click(); URL.revokeObjectURL(url);
-    });
-
-    // رسم الشجرة
-    function refreshUI(){
-      // تحديث القائمة
-      parentSelect.innerHTML = '<option value="">-- لا يربط الآن --</option>';
-      state.nodes.forEach(n=>{
-        const opt = document.createElement('option'); opt.value = n.id; opt.textContent = `${n.name} (${n.birth||'؟'})`; parentSelect.appendChild(opt);
-      });
-
-      // تنظيف svg
-      while(svg.firstChild) svg.removeChild(svg.firstChild);
-
-      // خطوط العلاقة
-      state.nodes.forEach(n=>{
-        n.parents.forEach(pid=>{
-          const p = state.nodes.find(x=>x.id==pid); if(!p) return;
-          const line = document.createElementNS('http://www.w3.org/2000/svg','line');
-          line.setAttribute('x1', p.x+80); line.setAttribute('y1', p.y+30);
-          line.setAttribute('x2', n.x+20); line.setAttribute('y2', n.y+15);
-          line.setAttribute('stroke','#9fb7e6'); line.setAttribute('stroke-width','2'); svg.appendChild(line);
-        });
-      });
-
-      // عقد
-      state.nodes.forEach(n=>{
-        const g = document.createElementNS('http://www.w3.org/2000/svg','g'); g.classList.add('node');
-        g.setAttribute('transform', `translate(${n.x},${n.y})`);
-        g.dataset.id = n.id;
-
-        // بطاقة
-        const rect = document.createElementNS('http://www.w3.org/2000/svg','rect'); rect.setAttribute('width','160'); rect.setAttribute('height','60');
-        rect.setAttribute('rx','8'); rect.setAttribute('ry','8'); rect.setAttribute('fill','#fff'); rect.setAttribute('stroke','#dceeff');
-        g.appendChild(rect);
-        const nameText = document.createElementNS('http://www.w3.org/2000/svg','text'); nameText.setAttribute('x','10'); nameText.setAttribute('y','22'); nameText.textContent = n.name; g.appendChild(nameText);
-        const metaText = document.createElementNS('http://www.w3.org/2000/svg','text'); metaText.setAttribute('x','10'); metaText.setAttribute('y','42'); metaText.setAttribute('font-size','12'); metaText.setAttribute('fill','#666'); metaText.textContent = `${n.gender} ${n.birth?('| '+n.birth):''}`; g.appendChild(metaText);
-
-        // اختيار
-        g.addEventListener('click', (e)=>{ e.stopPropagation(); selectNode(n.id); });
-
-        // قابل للسحب
-        makeDraggable(g, n);
-
-        svg.appendChild(g);
-      });
-    }
-
-    // اختيار عنصر وملء الفورم
-    function selectNode(id){
-      selectedNodeId = id; const n = state.nodes.find(x=>x.id==id);
-      nameIn.value = n.name; genderIn.value = n.gender; birthIn.value = n.birth; parentSelect.value = (n.parents[0]||'');
-    }
-
-    function clearForm(){ nameIn.value=''; genderIn.value='male'; birthIn.value=''; parentSelect.value=''; }
-
-    // سحب العقدة
-    function makeDraggable(g, node){
-      let offsetX=0, offsetY=0, dragging=false;
-      const onDown = (evt)=>{
-        dragging=true; svg.style.cursor='grabbing';
-        const pt = getEventPoint(evt);
-        offsetX = pt.x - node.x; offsetY = pt.y - node.y;
-      };
-      const onMove = (evt)=>{ if(!dragging) return; const pt = getEventPoint(evt); node.x = pt.x - offsetX; node.y = pt.y - offsetY; g.setAttribute('transform', `translate(${node.x},${node.y})`); // إعادة رسم الخطوط بآخر موقع أثناء السحب
-        // سهلنا: إعادة رسم كل شيء
-        redrawLinesOnly(); };
-      const onUp = ()=>{ dragging=false; svg.style.cursor='default'; refreshUI(); };
-      g.addEventListener('pointerdown', onDown);
-      window.addEventListener('pointermove', onMove);
-      window.addEventListener('pointerup', onUp);
-    }
-
-    function getEventPoint(evt){
-      const rect = svg.getBoundingClientRect(); return { x: evt.clientX - rect.left + svg.parentElement.scrollLeft, y: evt.clientY - rect.top + svg.parentElement.scrollTop };
-    }
-
-    function redrawLinesOnly(){
-      // إزالة الخطوط (العناصر من نوع line)
-      const lines = Array.from(svg.querySelectorAll('line')); lines.forEach(l=>l.remove());
-      state.nodes.forEach(n=>{
-        n.parents.forEach(pid=>{
-          const p = state.nodes.find(x=>x.id==pid); if(!p) return;
-          const line = document.createElementNS('http://www.w3.org/2000/svg','line');
-          line.setAttribute('x1', p.x+80); line.setAttribute('y1', p.y+30);
-          line.setAttribute('x2', n.x+20); line.setAttribute('y2', n.y+15);
-          line.setAttribute('stroke','#9fb7e6'); line.setAttribute('stroke-width','2'); svg.insertBefore(line, svg.firstChild);
-        });
-      });
-      // تحديث مواقع العقد فقط
-      state.nodes.forEach(n=>{
-        const g = svg.querySelector(`g.node[data-id='${n.id}']`);
-        if(g) g.setAttribute('transform', `translate(${n.x},${n.y})`);
-      });
-    }
-
-    // أي ضغط خارجي يلغي الاختيار
-    document.body.addEventListener('click', ()=>{ selectedNodeId = null; clearForm(); });
-
-    // بدأ ببيانات مثال
-    addNode('الوالد: حسن', 'male', '1960');
-    addNode('الوالدة: فاطمة', 'female', '1965');
-    addNode('الابن: علي', 'male', '1990', 1);
-    addNode('الابنة: سارة', 'female', '1993', 2);
-
-    refreshUI();
-  </script></body>
-    </html>
+    <script src="app.js"></script>
+</body>
+                          </html> 
