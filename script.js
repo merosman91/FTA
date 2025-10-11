@@ -27,7 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentEditingMember = null;
     let currentViewingMember = null;
     let currentPhotoDataUrl = null;
-    let treeLayout; // جعلها متغيرًا عامًا لتحديثه عند تغيير حجم الشاشة
+    let treeLayout;
 
     // --- 3. دالة لتحديث أبعاد الشجرة ---
     function updateDimensions() {
@@ -64,10 +64,42 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- 5. دالة رسم الشجرة (تم تحديثها بالكامل) ---
+    // --- 5. دالة بناء التسلسل الهرمي (الجديدة) ---
+    // هذه الدالة أقوى وتتعامل مع وجود جذور متعددة
+    function buildHierarchy(data) {
+        if (data.length === 0) return null;
+        
+        const map = new Map();
+        data.forEach(member => {
+            map.set(member.id, { ...member, children: [] });
+        });
+
+        const roots = [];
+        map.forEach((node, id) => {
+            if (node.parentId && map.has(node.parentId)) {
+                map.get(node.parentId).children.push(node);
+            } else if (!node.parentId) {
+                roots.push(node);
+            }
+        });
+
+        // إذا كان هناك أكثر من جذر، أنشئ جذرًا افتراضيًا لربطهم به
+        if (roots.length > 1) {
+            const artificialRoot = { name: "الجذور", id: "root", children: roots, isArtificial: true };
+            return d3.hierarchy(artificialRoot);
+        }
+        
+        // إذا كان هناك جذر واحد فقط، استخدمه مباشرة
+        return d3.hierarchy(roots[0]);
+    }
+
+    // --- 6. دالة رسم الشجرة (تم تحديثها بالكامل) ---
     function renderTree() {
         svg.selectAll("*").remove();
         updateDimensions();
+
+        const hierarchyRoot = buildHierarchy(familyData.members);
+        if (!hierarchyRoot) return;
 
         const margin = {top: 50, right: 50, bottom: 50, left: 50};
         const width = +svg.attr("width");
@@ -75,18 +107,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const g = svg.append("g");
 
-        const hierarchyData = d3.stratify()
-            .id(d => d.id)
-            .parentId(d => d.parentId)
-            (familyData.members);
+        const treeNodes = treeLayout(hierarchyRoot).descendants();
+        const treeLinks = hierarchyRoot.links();
 
-        if (!hierarchyData || !hierarchyData.descendants().length) {
-            return;
-        }
+        // فلترة العقد لعدم عرض الجذر الافتراضي
+        const displayNodes = treeNodes.filter(d => !d.data.isArtificial);
 
-        const treeNodes = treeLayout(hierarchyData);
-        const treeLinks = treeNodes.links();
-
+        // رسم الروابط
         const link = g.selectAll(".tree-link")
             .data(treeLinks)
             .enter().append("path")
@@ -96,8 +123,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 .y(d => d.x)
             );
 
+        // رسم العقد
         const node = g.selectAll(".person-node")
-            .data(treeNodes.descendants())
+            .data(displayNodes)
             .enter().append("g")
             .attr("class", d => `person-node ${d.data.gender} ${d.data.deathYear ? 'deceased' : ''}`)
             .attr("transform", d => `translate(${d.y},${d.x})`)
@@ -117,7 +145,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         node.append("text").attr("dy", 50).style("text-anchor", "middle").text(d => d.data.name);
 
-        // --- منطق التوسيط الجديد ---
+        // --- منطق التوسيط ---
         const treeBoundingBox = g.node().getBBox();
         const dx = (width - treeBoundingBox.width) / 2 - treeBoundingBox.x;
         const dy = (height - treeBoundingBox.height) / 2 - treeBoundingBox.y;
@@ -125,7 +153,7 @@ document.addEventListener('DOMContentLoaded', () => {
         g.attr("transform", finalTransform);
     }
 
-    // --- 6. دوال النوافذ المنبثقة ---
+    // --- 7. دوال النوافذ المنبثقة ---
     function openModal(modal) { modal.style.display = 'block'; }
     function closeModal(modal) {
         modal.style.display = 'none';
@@ -180,7 +208,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- 7. معالجات الأحداث ---
+    // --- 8. معالجات الأحداث ---
     addMemberBtn.addEventListener('click', openAddModal);
     shareBtn.addEventListener('click', () => { alert('تم نسخ رابط المشاركة!\n(هذه ميزة تجريبية)'); });
     
@@ -225,14 +253,14 @@ document.addEventListener('DOMContentLoaded', () => {
     closeBtns.forEach(btn => { btn.addEventListener('click', () => { closeModal(btn.closest('.modal')); }); });
     window.addEventListener('click', (e) => { if (e.target === memberModal) closeModal(memberModal); if (e.target === detailsModal) closeModal(detailsModal); });
 
-    // --- 8. تحسين للهاتف: إعادة رسم الشجرة عند تغيير اتجاه الشاشة ---
+    // --- 9. تحسين للهاتف: إعادة رسم الشجرة عند تغيير اتجاه الشاشة ---
     window.addEventListener('resize', () => {
         if (familyData.members.length > 0) {
             renderTree();
         }
     });
 
-    // --- 9. التشغيل الأولي ---
+    // --- 10. التشغيل الأولي ---
     const collaboratorList = document.querySelector('.collaborator-list');
     collaborators.forEach(name => { const div = document.createElement('div'); div.className = 'collaborator'; div.textContent = name; collaboratorList.appendChild(div); });
     checkUIState();
