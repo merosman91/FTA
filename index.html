@@ -40,12 +40,14 @@
         <svg id="tree-svg" width="100%" height="100%" style="display: none;"></svg>
     </main>
 
+    <!-- نافذة إضافة/تعديل فرد -->
     <div id="member-modal" class="modal">
         <div class="modal-content">
             <span class="close-btn">&times;</span>
             <h2 id="modal-title">إضافة فرد جديد</h2>
             <form id="member-form">
                 <input type="hidden" id="member-id" name="member-id">
+                <input type="hidden" id="relation-type" name="relation-type">
                 <div class="form-group">
                     <label for="name">الاسم الكامل</label>
                     <input type="text" id="name" name="name" required>
@@ -74,26 +76,19 @@
                     <textarea id="story" name="story" rows="4" placeholder="أضف قصة أو ذكرى جميلة عن هذا الشخص..."></textarea>
                 </div>
                 <div class="form-group" id="relation-group">
-                    <label for="relation-to">صلة القرابة</label>
+                    <label for="relation-to">صلة القرابة بـ:</label>
                     <select id="relation-to" name="relation-to">
                         <option value="">-- لا شيء (جذر الشجرة) --</option>
                     </select>
                 </div>
-                <div class="form-group" id="relation-type-group">
-                    <label for="relation-type">نوع العلاقة</label>
-                    <select id="relation-type" name="relation-type">
-                        <option value="father">أب</option>
-                        <option value="mother">أم</option>
-                        <option value="son">ابن</option>
-                        <option value="daughter">ابنة</option>
-                        <option value="spouse">زوج/زوجة</option>
-                    </select>
-                </div>
+                <!-- سيتم عرض خيارات العلاقة هنا ديناميكيًا -->
+                <div id="relationship-options" class="relationship-options"></div>
                 <button type="submit" class="submit-btn">حفظ</button>
             </form>
         </div>
     </div>
 
+    <!-- نافذة عرض تفاصيل الفرد -->
     <div id="details-modal" class="modal">
         <div class="modal-content details-modal-content">
             <span class="close-btn">&times;</span>
@@ -117,4 +112,4 @@
 
     <script src="script.js"></script>
 </body>
-                </html>
+            </html>
