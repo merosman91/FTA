@@ -111,6 +111,10 @@ body {
     display: block;
     width: 100%;
     height: 100%;
+    cursor: grab;
+}
+#tree-svg.dragging {
+    cursor: grabbing;
 }
 
 /* أنماط العقد في الشجرة */
@@ -143,7 +147,8 @@ body {
     font-weight: bold;
     font-size: 14px;
     pointer-events: none;
-    fill: white;
+    /* تم تغيير اللون إلى داكن */
+    fill: var(--primary-color);
 }
 
 .tree-link {
@@ -239,6 +244,34 @@ body {
 
 .danger:hover {
     background-color: #c0392b !important;
+}
+
+/* أنماط خيارات العلاقة الذكية */
+.relationship-options {
+    margin-bottom: 1.5rem;
+    border: 1px solid #bdc3c7;
+    border-radius: 4px;
+    padding: 1rem;
+    background-color: #f8f9fa;
+}
+
+.relationship-options h4 {
+    margin-top: 0;
+    margin-bottom: 1rem;
+    text-align: center;
+    color: var(--primary-color);
+}
+
+.relationship-option {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.5rem;
+    cursor: pointer;
+}
+
+.relationship-option input[type="radio"] {
+    margin-left: 0.5rem;
+    width: auto;
 }
 
 .details-header {
