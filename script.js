@@ -29,7 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentPhotoDataUrl = null;
     let treeLayout;
 
-    // --- 3. دالة لحساب العمر (جديدة) ---
+    // --- 3. دالة لحساب العمر ---
     function calculateAge(member) {
         if (!member.birthYear) return '';
         const endYear = member.deathYear || new Date().getFullYear();
@@ -67,7 +67,8 @@ document.addEventListener('DOMContentLoaded', () => {
             svg.style('display', 'none');
         } else {
             emptyState.style.display = 'none';
-            svg.style('display', 'block';
+            // تم تصحيح الخطأ هنا
+            svg.style('display', 'block');
             renderTree();
         }
     }
@@ -108,7 +109,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return d3.drag().on("start", dragstarted).on("drag", dragged).on("end", dragended);
     }
 
-    // --- 8. دالة رسم الشجرة (مع إظهار العمر) ---
+    // --- 8. دالة رسم الشجرة ---
     function renderTree() {
         svg.selectAll("*").remove();
         updateDimensions();
@@ -140,7 +141,6 @@ document.addEventListener('DOMContentLoaded', () => {
             .attr("clip-path", d => `url(#clip-${d.data.id})`);
         node.append("circle").attr("r", 30).style("fill", "transparent").style("stroke", "#2c3e50").style("stroke-width", 3);
         node.append("text").attr("dy", 50).style("text-anchor", "middle").text(d => d.data.name);
-        // --- إضافة نص العمر ---
         node.append("text")
             .attr("dy", 65)
             .style("text-anchor", "middle")
@@ -203,7 +203,6 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('details-name').textContent = member.name;
         document.getElementById('details-photo').src = member.photo || `https://ui-avatars.com/api/?name=${encodeURIComponent(member.name)}&background=34495e&color=fff&size=100`;
         const info = [`النوع: ${member.gender === 'male' ? 'ذكر' : 'أنثى'}`, `سنة الميلاد: ${member.birthYear || 'غير محدد'}`, `سنة الوفاة: ${member.deathYear || 'على قيد الحياة'}`];
-        // --- إضافة العمر للتفاصيل ---
         const age = calculateAge(member);
         if (age) info.push(`العمر: ${age}`);
         document.getElementById('details-info').innerHTML = info.join('<br>');
@@ -277,12 +276,11 @@ document.addEventListener('DOMContentLoaded', () => {
         checkUIState();
     });
 
-    // --- تم إصلاح معالج النقر على زر التعديل ---
     editMemberBtn.addEventListener('click', () => {
         if (currentViewingMember) {
-            const memberIdToEdit = currentViewingMember.id; // حفظ المعرف أولاً
+            const memberIdToEdit = currentViewingMember.id;
             closeModal(detailsModal);
-            openEditModal(memberIdToEdit); // استخدام المعرف المحفوظ
+            openEditModal(memberIdToEdit);
         }
     });
 
