@@ -1,35 +1,156 @@
 document.addEventListener('DOMContentLoaded', () => {
 
-    // --- 1. هيكل البيانات ---
+    // =================================================================
+    // 1. STATE MANAGEMENT (إدارة الحالة)
+    // =================================================================
+    // كل بيانات التطبيق توجد هنا. لا يتم تعديلها إلا من خلال الدوال المخصصة لذلك.
     let familyData = {
         members: [],
         nextId: 1
     };
+
+    // =================================================================
+    // 2. STATE MUTATION FUNCTIONS (وظائف تعديل الحالة)
+    // =================================================================
+    // هذه هي الدوال الوحيدة المسموح لها بتغيير 'familyData'
+
+    function addMember(memberData) {
+        const newMember = {
+            id: familyData.nextId++,
+            ...memberData,
+            parentId: null,
+            spouseId: null
+        };
+        familyData.members.push(newMember);
+        return newMember;
+    }
+
+    function updateMember(id, memberData) {
+        const memberIndex = familyData.members.findIndex(m => m.id === id);
+        if (memberIndex !== -1) {
+            familyData.members[memberIndex] = { ...familyData.members[memberIndex], ...memberData };
+            return familyData.members[memberIndex];
+        }
+        return null;
+    }
+
+    function deleteMember(id) {
+        const children = familyData.members.filter(m => m.parentId === id);
+        children.forEach(child => child.parentId = null);
+
+        const member = findMemberById(id);
+        if (member && member.spouseId) {
+            const spouse = findMemberById(member.spouseId);
+            if (spouse) spouse.spouseId = null;
+        }
+
+        familyData.members = familyData.members.filter(m => m.id !== id);
+    }
+
+    // =================================================================
+    // 3. RENDERING FUNCTION (وظيفة العرض)
+    // =================================================================
+    // هذه الدالة مسؤولة عن رسم الشجرة بالكامل بناءً على الحالة الحالية.
+
+    let svg, treeG, zoomBehavior;
+    const treeLayout = d3.tree();
+
+    function renderTree() {
+        const container = document.querySelector('.tree-container');
+        const width = container.clientWidth;
+        const height = container.clientHeight;
+        const margin = { top: 50, right: 50, bottom: 50, left: 50 };
+
+        svg = d3.select("#tree-svg")
+            .attr("width", width).attr("height", height);
+
+        // مسح كل شيء وإعادة البناء
+        svg.selectAll("*").remove();
+        treeG = svg.append("g").attr("class", "tree-g");
+
+        if (familyData.members.length === 0) return;
+
+        treeLayout.size([height - margin.top - margin.bottom, width - margin.left - margin.right]);
+
+        const hierarchyRoot = buildHierarchy(familyData.members);
+        if (!hierarchyRoot) return;
+
+        const treeNodes = treeLayout(hierarchyRoot).descendants();
+        const treeLinks = hierarchyRoot.links();
+        const displayNodes = treeNodes.filter(d => !d.data.isArtificial);
+
+        // روابط
+        treeG.selectAll(".tree-link")
+            .data(treeLinks)
+            .enter().append("path")
+            .attr("class", "tree-link")
+            .attr("d", d3.linkHorizontal().x(d => d.y).y(d => d.x));
+
+        // عقد
+        const node = treeG.selectAll(".person-node")
+            .data(displayNodes)
+            .enter().append("g")
+            .attr("class", d => `person-node ${d.data.gender} ${d.data.deathYear ? 'deceased' : ''}`)
+            .attr("transform", d => `translate(${d.y},${d.x})`)
+            .on("click", (event, d) => showDetails(d.data.id));
+
+        node.append("defs").append("clipPath").attr("id", d => `clip-${d.data.id}`).append("circle").attr("r", 30);
+        node.append("image")
+            .attr("xlink:href", d => d.data.photo || `https://ui-avatars.com/api/?name=${encodeURIComponent(d.data.name)}&background=${d.data.gender === 'male' ? '3498db' : 'e91e63'}&color=fff&size=60`)
+            .attr("x", -30).attr("y", -30).attr("width", 60).attr("height", 60)
+            .attr("clip-path", d => `url(#clip-${d.data.id})`);
+        node.append("circle").attr("r", 30).style("fill", "transparent").style("stroke", "#2c3e50").style("stroke-width", 3);
+        node.append("text").attr("dy", 50).style("text-anchor", "middle").text(d => d.data.name);
+        node.append("text").attr("dy", 65).style("text-anchor", "middle").style("font-size", "12px").style("fill", "#555").text(d => calculateAge(d.data));
+        
+        // إعداد السحب والتكبير
+        setupInteractivity();
+        centerView();
+    }
     
-    const collaborators = ["أنت", "خالد أحمد (محرر)"];
+    function setupInteractivity() {
+        // السحب والإفلات للعقد
+        const dragBehavior = d3.drag()
+            .on("drag", (event, d) => {
+                d.x = event.y;
+                d.y = event.x;
+                d3.select(event.sourceEvent.target.parentNode).attr("transform", `translate(${d.y},${d.x})`);
+                svg.selectAll(".tree-link").attr("d", d3.linkHorizontal().x(d => d.y).y(d => d.x));
+                event.sourceEvent.stopPropagation();
+            })
+            .on("end", (event, d) => {
+                updateMember(d.data.id, { manualX: d.x, manualY: d.y });
+            });
+        
+        svg.selectAll(".person-node").call(dragBehavior);
 
-    // --- 2. عناصر DOM ---
-    const svg = d3.select("#tree-svg");
-    const treeContainer = document.querySelector('.tree-container');
-    const emptyState = document.getElementById('empty-state');
-    const addMemberBtn = document.getElementById('add-member-btn');
-    const shareBtn = document.getElementById('share-btn');
-    const memberModal = document.getElementById('member-modal');
-    const detailsModal = document.getElementById('details-modal');
-    const memberForm = document.getElementById('member-form');
-    const modalTitle = document.getElementById('modal-title');
-    const relationToSelect = document.getElementById('relation-to');
-    const relationshipOptionsDiv = document.getElementById('relationship-options');
-    const closeBtns = document.querySelectorAll('.close-btn');
-    const editMemberBtn = document.getElementById('edit-member-btn');
-    const deleteMemberBtn = document.getElementById('delete-member-btn');
-    const photoInput = document.getElementById('photo');
+        // التكبير والتصغير للشجرة
+        zoomBehavior = d3.zoom().scaleExtent([0.1, 4]).on("zoom", (event) => {
+            treeG.attr("transform", event.transform);
+        });
+        svg.call(zoomBehavior);
+    }
 
-    let currentViewingMember = null;
-    let currentPhotoDataUrl = null; // متغير مؤقت للصورة
-    let treeLayout;
+    function centerView() {
+        if (!treeG) return;
+        const treeBoundingBox = treeG.node().getBBox();
+        const fullWidth = +svg.attr("width");
+        const fullHeight = +svg.attr("height");
+        const midX = treeBoundingBox.x + treeBoundingBox.width / 2;
+        const midY = treeBoundingBox.y + treeBoundingBox.height / 2;
+        const scale = 0.8 / Math.max(treeBoundingBox.width / fullWidth, treeBoundingBox.height / fullHeight);
+        const translate = [fullWidth / 2 - scale * midX, fullHeight / 2 - scale * midY];
+        svg.call(zoomBehavior.transform, d3.zoomIdentity.translate(translate[0], translate[1]).scale(scale));
+    }
 
-    // --- 3. دالة لحساب العمر ---
+    // =================================================================
+    // 4. UI LOGIC & HELPERS (منطق الواجهة المساعد)
+    // =================================================================
+    
+    function findMemberById(id) {
+        return familyData.members.find(m => m.id === id);
+    }
+
     function calculateAge(member) {
         if (!member.birthYear) return '';
         const endYear = member.deathYear || new Date().getFullYear();
@@ -37,42 +158,6 @@ document.addEventListener('DOMContentLoaded', () => {
         return member.deathYear ? `${age} (تُوفي)` : `${age} عامًا`;
     }
 
-    // --- 4. دالة لتحديث أبعاد الشجرة ---
-    function updateDimensions() {
-        const width = treeContainer.clientWidth;
-        const height = treeContainer.clientHeight;
-        const margin = {top: 50, right: 50, bottom: 50, left: 50};
-        const innerWidth = width - margin.left - margin.right;
-        const innerHeight = height - margin.top - margin.bottom;
-
-        treeLayout = d3.tree().size([innerHeight, innerWidth]);
-        svg.attr("width", width).attr("height", height);
-    }
-
-    // --- 5. دوال مساعدة ---
-    function findMember(id) {
-        return familyData.members.find(m => m.id === id);
-    }
-    function getChildren(parentId) {
-        return familyData.members.filter(m => m.parentId === parentId);
-    }
-    function getSpouse(memberId) {
-        const member = findMember(memberId);
-        if (!member || !member.spouseId) return null;
-        return findMember(member.spouseId);
-    }
-    function checkUIState() {
-        if (familyData.members.length === 0) {
-            emptyState.style.display = 'flex';
-            svg.style('display', 'none';
-        } else {
-            emptyState.style.display = 'none';
-            svg.style('display', 'block';
-            renderTree();
-        }
-    }
-
-    // --- 6. دالة بناء التسلسل الهرمي (مستقرة) ---
     function buildHierarchy(data) {
         if (data.length === 0) return null;
         const dataCopy = JSON.parse(JSON.stringify(data));
@@ -86,156 +171,35 @@ document.addEventListener('DOMContentLoaded', () => {
         return stratify(dataCopy);
     }
 
-    // --- 7. دالة التكبير والتصغير ---
-    const zoomBehavior = d3.zoom()
-        .scaleExtent([0.1, 4])
-        .on("zoom", (event) => {
-            svg.select(".tree-g").attr("transform", event.transform);
-        });
+    let currentPhotoDataUrl = null;
+    let currentViewingMemberId = null;
 
-    // --- 8. دالة السحب والإفلات (مُصلحة بالكامل) ---
-    const dragBehavior = d3.drag()
-        .on("start", (event, d) => {
-            d3.select(event.sourceEvent.target.parentNode).raise().classed("active", true);
-        })
-        .on("drag", (event, d) => {
-            // تحديث الإحداثيات
-            d.x = event.y;
-            d.y = event.x;
-            // تطبيق التحويل مباشرة
-            d3.select(event.sourceEvent.target.parentNode)
-                .attr("transform", `translate(${d.y},${d.x})`);
-            // إعادة رسم الروابط
-            svg.selectAll(".tree-link").attr("d", d3.linkHorizontal()
-                .x(d => d.y)
-                .y(d => d.x)
-            );
-            // **الحل النهائي: منع الحدث من الانتقال إلى التكبير**
-            event.sourceEvent.stopPropagation();
-        })
-        .on("end", (event, d) => {
-            d3.select(event.sourceEvent.target.parentNode).classed("active", false);
-            // حفظ الموقع الجديد في بيانات العضو الأصلية
-            const member = findMember(d.data.id);
-            if(member) {
-                member.manualX = d.x;
-                member.manualY = d.y;
-            }
-        });
-
-    // --- 9. دالة رسم الشجرة ---
-    function renderTree() {
-        svg.selectAll("*").remove();
-        updateDimensions();
-
-        const hierarchyRoot = buildHierarchy(familyData.members);
-        if (!hierarchyRoot) return;
-
-        const treeG = svg.append("g").attr("class", "tree-g");
-        
-        const treeNodes = treeLayout(hierarchyRoot).descendants();
-        const treeLinks = hierarchyRoot.links();
-
-        treeNodes.forEach(d => {
-            const member = findMember(d.data.id);
-            if (member && member.manualX !== undefined && member.manualY !== undefined) {
-                d.x = member.manualX;
-                d.y = member.manualY;
-            }
-        });
-
-        const displayNodes = treeNodes.filter(d => !d.data.isArtificial);
-
-        // رسم الروابط
-        treeG.selectAll(".tree-link")
-            .data(treeLinks)
-            .enter().append("path")
-            .attr("class", "tree-link")
-            .attr("d", d3.linkHorizontal().x(d => d.y).y(d => d.x));
-
-        // رسم العقد
-        const node = treeG.selectAll(".person-node")
-            .data(displayNodes)
-            .enter().append("g")
-            .attr("class", d => `person-node ${d.data.gender} ${d.data.deathYear ? 'deceased' : ''}`)
-            .attr("transform", d => `translate(${d.y},${d.x})`)
-            .on("click", (event, d) => showDetails(d.data.id))
-            .call(dragBehavior); // تفعيل السحب
-
-        node.append("defs").append("clipPath").attr("id", d => `clip-${d.data.id}`).append("circle").attr("r", 30);
-        node.append("image")
-            .attr("xlink:href", d => d.data.photo || `https://ui-avatars.com/api/?name=${encodeURIComponent(d.data.name)}&background=${d.data.gender === 'male' ? '3498db' : 'e91e63'}&color=fff&size=60`)
-            .attr("x", -30).attr("y", -30).attr("width", 60).attr("height", 60)
-            .attr("clip-path", d => `url(#clip-${d.data.id})`);
-        node.append("circle").attr("r", 30).style("fill", "transparent").style("stroke", "#2c3e50").style("stroke-width", 3);
-        node.append("text").attr("dy", 50).style("text-anchor", "middle").text(d => d.data.name);
-        node.append("text")
-            .attr("dy", 65)
-            .style("text-anchor", "middle")
-            .style("font-size", "12px")
-            .style("fill", "#555")
-            .text(d => calculateAge(d.data));
-            
-        svg.call(zoomBehavior);
-        
-        // توسيط الشجرة في البداية
-        const treeBoundingBox = treeG.node().getBBox();
-        const fullWidth = +svg.attr("width");
-        const fullHeight = +svg.attr("height");
-        const midX = treeBoundingBox.x + treeBoundingBox.width / 2;
-        const midY = treeBoundingBox.y + treeBoundingBox.height / 2;
-        const scale = 0.8 / Math.max(treeBoundingBox.width / fullWidth, treeBoundingBox.height / fullHeight);
-        const translate = [fullWidth / 2 - scale * midX, fullHeight / 2 - scale * midY];
-        svg.call(zoomBehavior.transform, d3.zoomIdentity.translate(translate[0], translate[1]).scale(scale));
+    function checkUIState() {
+        const emptyState = document.getElementById('empty-state');
+        const svgElement = document.getElementById('tree-svg');
+        if (familyData.members.length === 0) {
+            emptyState.style.display = 'flex';
+            svgElement.style.display = 'none';
+        } else {
+            emptyState.style.display = 'none';
+            svgElement.style.display = 'block';
+            renderTree();
+        }
     }
 
-    // --- 10. دوال النوافذ المنبثقة ---
     function openModal(modal) { modal.style.display = 'block'; }
     function closeModal(modal) {
         modal.style.display = 'none';
-        memberForm.reset();
-        relationshipOptionsDiv.innerHTML = '';
-        currentViewingMember = null;
-        currentPhotoDataUrl = null; // تصفير الصورة عند الإغلاق
+        document.getElementById('member-form').reset();
+        document.getElementById('relationship-options').innerHTML = '';
+        currentPhotoDataUrl = null;
+        currentViewingMemberId = null;
     }
-    function populateRelationSelect() {
-        relationToSelect.innerHTML = '<option value="">-- لا شيء (جذر الشجرة) --</option>';
-        familyData.members.forEach(member => {
-            const option = document.createElement('option');
-            option.value = member.id; option.textContent = member.name;
-            relationToSelect.appendChild(option);
-        });
-    }
-    function updateRelationshipOptions() {
-        const selectedId = parseInt(relationToSelect.value);
-        relationshipOptionsDiv.innerHTML = '';
-        if (!selectedId) return;
-        const relative = findMember(selectedId);
-        if (!relative) return;
-        const optionsContainer = document.createElement('div');
-        const title = document.createElement('h4');
-        title.textContent = `ما هي علاقة الشخص الجديد بـ ${relative.name}؟`;
-        optionsContainer.appendChild(title);
-        const relationships = [];
-        if (relative.gender === 'male') {
-            relationships.push({ type: 'father', label: 'أبوه' }, { type: 'mother', label: 'أمه' });
-            if (!getSpouse(relative.id)) relationships.push({ type: 'spouse', label: 'زوجته' });
-        } else {
-            relationships.push({ type: 'father', label: 'أبوها' }, { type: 'mother', label: 'أمها' });
-            if (!getSpouse(relative.id)) relationships.push({ type: 'spouse', label: 'زوجها' });
-        }
-        relationships.push({ type: 'son', label: 'ابنه' }, { type: 'daughter', label: 'ابنتها' });
-        relationships.forEach(rel => {
-            const label = document.createElement('label'); label.className = 'relationship-option';
-            const input = document.createElement('input'); input.type = 'radio'; input.name = 'dynamic-relation'; input.value = rel.type;
-            label.appendChild(input); label.appendChild(document.createTextNode(rel.label));
-            optionsContainer.appendChild(label);
-        });
-        relationshipOptionsDiv.appendChild(optionsContainer);
-    }
+
     function showDetails(memberId) {
-        const member = findMember(memberId); if (!member) return;
-        currentViewingMember = member;
+        const member = findMemberById(memberId);
+        if (!member) return;
+        currentViewingMemberId = memberId;
         document.getElementById('details-name').textContent = member.name;
         document.getElementById('details-photo').src = member.photo || `https://ui-avatars.com/api/?name=${encodeURIComponent(member.name)}&background=34495e&color=fff&size=100`;
         const info = [`النوع: ${member.gender === 'male' ? 'ذكر' : 'أنثى'}`, `سنة الميلاد: ${member.birthYear || 'غير محدد'}`, `سنة الوفاة: ${member.deathYear || 'على قيد الحياة'}`];
@@ -243,94 +207,165 @@ document.addEventListener('DOMContentLoaded', () => {
         if (age) info.push(`العمر: ${age}`);
         document.getElementById('details-info').innerHTML = info.join('<br>');
         document.getElementById('details-story').textContent = member.story || 'لم تتم إضافة قصة بعد.';
-        openModal(detailsModal);
-    }
-    function openAddModal() {
-        modalTitle.textContent = 'إضافة فرد جديد';
-        document.getElementById('relation-group').style.display = 'block';
-        populateRelationSelect();
-        openModal(memberModal);
-    }
-    function openEditModal(memberId) {
-        const member = findMember(memberId); if (!member) return;
-        modalTitle.textContent = 'تعديل بيانات الفرد';
-        document.getElementById('member-id').value = member.id;
-        document.getElementById('name').value = member.name;
-        document.getElementById('gender').value = member.gender;
-        document.getElementById('birth-year').value = member.birthYear || '';
-        document.getElementById('death-year').value = member.deathYear || '';
-        document.getElementById('story').value = member.story || '';
-        document.getElementById('relation-group').style.display = 'none';
-        openModal(memberModal);
-    }
-    function deleteMember(memberId) {
-        if (confirm('هل أنت متأكد من حذف هذا الفرد؟ سيؤثر هذا على الأبناء المرتبطين به.')) {
-            const children = getChildren(memberId); children.forEach(child => child.parentId = null);
-            const member = findMember(memberId); if(member.spouseId) { const spouse = findMember(member.spouseId); if(spouse) spouse.spouseId = null; }
-            familyData.members = familyData.members.filter(m => m.id !== memberId);
-            closeModal(detailsModal); checkUIState();
-        }
+        openModal(document.getElementById('details-modal'));
     }
 
-    // --- 11. معالجات الأحداث ---
-    addMemberBtn.addEventListener('click', openAddModal);
-    shareBtn.addEventListener('click', () => { alert('تم نسخ رابط المشاركة!\n(هذه ميزة تجريبية)'); });
-    relationToSelect.addEventListener('change', updateRelationshipOptions);
-    photoInput.addEventListener('change', (event) => {
-        const file = event.target.files[0];
-        if (file) { const reader = new FileReader(); reader.onload = (e) => { currentPhotoDataUrl = e.target.result; }; reader.readAsDataURL(file); }
+    function populateRelationSelect() {
+        const select = document.getElementById('relation-to');
+        select.innerHTML = '<option value="">-- لا شيء (جذر الشجرة) --</option>';
+        familyData.members.forEach(member => {
+            const option = document.createElement('option');
+            option.value = member.id; option.textContent = member.name;
+            select.appendChild(option);
+        });
+    }
+
+    function updateRelationshipOptions() {
+        const selectedId = parseInt(document.getElementById('relation-to').value);
+        const optionsDiv = document.getElementById('relationship-options');
+        optionsDiv.innerHTML = '';
+        if (!selectedId) return;
+
+        const relative = findMemberById(selectedId);
+        if (!relative) return;
+
+        const optionsContainer = document.createElement('div');
+        const title = document.createElement('h4');
+        title.textContent = `ما هي علاقة الشخص الجديد بـ ${relative.name}؟`;
+        optionsContainer.appendChild(title);
+
+        const relationships = [];
+        if (relative.gender === 'male') {
+            relationships.push({ type: 'father', label: 'أبوه' }, { type: 'mother', label: 'أمه' });
+            if (!relative.spouseId) relationships.push({ type: 'spouse', label: 'زوجته' });
+        } else {
+            relationships.push({ type: 'father', label: 'أبوها' }, { type: 'mother', label: 'أمها' });
+            if (!relative.spouseId) relationships.push({ type: 'spouse', label: 'زوجها' });
+        }
+        relationships.push({ type: 'son', label: 'ابنه' }, { type: 'daughter', label: 'ابنتها' });
+
+        relationships.forEach(rel => {
+            const label = document.createElement('label'); label.className = 'relationship-option';
+            const input = document.createElement('input'); input.type = 'radio'; input.name = 'dynamic-relation'; input.value = rel.type;
+            label.appendChild(input); label.appendChild(document.createTextNode(rel.label));
+            optionsContainer.appendChild(label);
+        });
+        optionsDiv.appendChild(optionsContainer);
+    }
+
+    // =================================================================
+    // 5. EVENT HANDLERS (معالجات الأحداث)
+    // =================================================================
+
+    document.getElementById('add-member-btn').addEventListener('click', () => {
+        document.getElementById('modal-title').textContent = 'إضافة فرد جديد';
+        document.getElementById('relation-group').style.display = 'block';
+        populateRelationSelect();
+        openModal(document.getElementById('member-modal'));
     });
-    memberForm.addEventListener('submit', (e) => {
+
+    document.getElementById('share-btn').addEventListener('click', () => {
+        alert('تم نسخ رابط المشاركة!\n(هذه ميزة تجريبية)');
+    });
+
+    document.getElementById('relation-to').addEventListener('change', updateRelationshipOptions);
+
+    document.getElementById('photo').addEventListener('change', (event) => {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (e) => { currentPhotoDataUrl = e.target.result; };
+            reader.readAsDataURL(file);
+        }
+    });
+
+    document.getElementById('member-form').addEventListener('submit', (e) => {
         e.preventDefault();
-        const formData = new FormData(memberForm);
-        const name = formData.get('name');
-        const gender = formData.get('gender');
-        const birthYear = parseInt(formData.get('birth-year')) || null;
-        const deathYear = parseInt(formData.get('death-year')) || null;
-        const story = formData.get('story');
+        const formData = new FormData(e.target);
+        const memberId = parseInt(formData.get('member-id'));
         const relationToId = parseInt(formData.get('relation-to'));
         const relationTypeInput = document.querySelector('input[name="dynamic-relation"]:checked');
         const relationType = relationTypeInput ? relationTypeInput.value : null;
-        
-        const memberId = parseInt(formData.get('member-id'));
-        if (memberId) { // تعديل
-            const member = findMember(memberId);
-            if (member) {
-                member.name = name; member.gender = gender; member.birthYear = birthYear; member.deathYear = deathYear; member.story = story;
-                if(currentPhotoDataUrl) member.photo = currentPhotoDataUrl;
-            }
-        } else { // إضافة
-            const newMember = { id: familyData.nextId++, name, gender, birthYear, deathYear, story, photo: currentPhotoDataUrl, parentId: null, spouseId: null };
+
+        const memberData = {
+            name: formData.get('name'),
+            gender: formData.get('gender'),
+            birthYear: parseInt(formData.get('birth-year')) || null,
+            deathYear: parseInt(formData.get('death-year')) || null,
+            story: formData.get('story'),
+            photo: currentPhotoDataUrl,
+        };
+
+        if (memberId) { // Edit mode
+            updateMember(memberId, memberData);
+        } else { // Add mode
+            const newMember = addMember(memberData);
             if (relationToId && relationType) {
-                const relative = findMember(relationToId);
-                if (relationType === 'spouse') { newMember.spouseId = relationToId; relative.spouseId = newMember.id; }
-                else { newMember.parentId = relationToId; }
+                const relative = findMemberById(relationToId);
+                if (relationType === 'spouse') {
+                    updateMember(newMember.id, { spouseId: relationToId });
+                    updateMember(relationToId, { spouseId: newMember.id });
+                } else {
+                    updateMember(newMember.id, { parentId: relationToId });
+                }
             }
-            familyData.members.push(newMember);
         }
-
-        // **الحل النهائي: تصفير متغير الصورة فورًا بعد الاستخدام**
-        currentPhotoDataUrl = null;
-
-        closeModal(memberModal);
+        
+        currentPhotoDataUrl = null; // Reset photo
+        closeModal(document.getElementById('member-modal'));
         checkUIState();
     });
 
-    editMemberBtn.addEventListener('click', () => {
-        if (currentViewingMember) {
-            const memberIdToEdit = currentViewingMember.id;
-            closeModal(detailsModal);
-            openEditModal(memberIdToEdit);
+    document.getElementById('edit-member-btn').addEventListener('click', () => {
+        if (currentViewingMemberId) {
+            const member = findMemberById(currentViewingMemberId);
+            if (!member) return;
+            document.getElementById('modal-title').textContent = 'تعديل بيانات الفرد';
+            document.getElementById('member-id').value = member.id;
+            document.getElementById('name').value = member.name;
+            document.getElementById('gender').value = member.gender;
+            document.getElementById('birth-year').value = member.birthYear || '';
+            document.getElementById('death-year').value = member.deathYear || '';
+            document.getElementById('story').value = member.story || '';
+            document.getElementById('relation-group').style.display = 'none';
+            closeModal(document.getElementById('details-modal'));
+            openModal(document.getElementById('member-modal'));
         }
     });
 
-    deleteMemberBtn.addEventListener('click', () => { if (currentViewingMember) { deleteMember(currentViewingMember.id); } });
-    closeBtns.forEach(btn => { btn.addEventListener('click', () => { closeModal(btn.closest('.modal')); }); });
-    window.addEventListener('click', (e) => { if (e.target === memberModal) closeModal(memberModal); if (e.target === detailsModal) closeModal(detailsModal); });
-    window.addEventListener('resize', () => { if (familyData.members.length > 0) { renderTree(); } });
+    document.getElementById('delete-member-btn').addEventListener('click', () => {
+        if (currentViewingMemberId && confirm('هل أنت متأكد من حذف هذا الفرد؟')) {
+            deleteMember(currentViewingMemberId);
+            closeModal(document.getElementById('details-modal'));
+            checkUIState();
+        }
+    });
 
-    // --- 12. التشغيل الأولي ---
+    document.querySelectorAll('.close-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            closeModal(btn.closest('.modal'));
+        });
+    });
+
+    window.addEventListener('click', (e) => {
+        if (e.target === document.getElementById('member-modal')) closeModal(document.getElementById('member-modal'));
+        if (e.target === document.getElementById('details-modal')) closeModal(document.getElementById('details-modal'));
+    });
+
+    window.addEventListener('resize', () => {
+        if (familyData.members.length > 0) {
+            renderTree();
+        }
+    });
+
+    // =================================================================
+    // 6. INITIALIZATION (الإعداد الأولي)
+    // =================================================================
     const collaboratorList = document.querySelector('.collaborator-list');
-    collaborators.forEach(name => { const div = document.createElement('div'); div.className = 'collaborator'; div.textContent = name; collaboratorList.appendChild(div); });
+    ["أنت", "خالد أحمد (محرر)"].forEach(name => {
+        const div = document.createElement('div'); div.className = 'collaborator'; div.textContent = name;
+        collaboratorList.appendChild(div);
+    });
+    
     checkUIState();
 });
