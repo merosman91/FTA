@@ -26,7 +26,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const photoInput = document.getElementById('photo');
 
     let currentViewingMember = null;
-    let currentPhotoDataUrl = null;
+    let currentPhotoDataUrl = null; // متغير مؤقت للصورة
     let treeLayout;
 
     // --- 3. دالة لحساب العمر ---
@@ -64,76 +64,104 @@ document.addEventListener('DOMContentLoaded', () => {
     function checkUIState() {
         if (familyData.members.length === 0) {
             emptyState.style.display = 'flex';
-            svg.style('display', 'none');
+            svg.style('display', 'none';
         } else {
             emptyState.style.display = 'none';
-            // تم تصحيح الخطأ هنا
-            svg.style('display', 'block');
+            svg.style('display', 'block';
             renderTree();
         }
     }
 
-    // --- 6. دالة بناء التسلسل الهرمي ---
+    // --- 6. دالة بناء التسلسل الهرمي (مستقرة) ---
     function buildHierarchy(data) {
         if (data.length === 0) return null;
+        const dataCopy = JSON.parse(JSON.stringify(data));
+        const roots = dataCopy.filter(d => !d.parentId);
+        if (roots.length > 1) {
+            const artificialRoot = { id: "root", name: "الجذور", isArtificial: true };
+            dataCopy.push(artificialRoot);
+            roots.forEach(r => r.parentId = "root");
+        }
         const stratify = d3.stratify().id(d => d.id).parentId(d => d.parentId);
-        let root;
-        try {
-            root = stratify(data);
-        } catch (e) {
-            const roots = data.filter(d => !d.parentId);
-            if (roots.length > 1) {
-                const artificialRootData = { name: "الجذور", id: "root", isArtificial: true };
-                const dataWithRoot = [artificialRootData, ...data];
-                roots.forEach(r => r.parentId = "root");
-                root = stratify(dataWithRoot);
-            } else { return null; }
-        }
-        return root;
+        return stratify(dataCopy);
     }
 
-    // --- 7. دالة السحب والإفلات ---
-    function drag(simulation) {
-        function dragstarted(event, d) { if (!event.active) simulation.alphaTarget(0.3).restart(); d.fx = d.x; d.fy = d.y; svg.classed("dragging", true); }
-        function dragged(event, d) {
-            d.fx = event.x; d.fy = event.y;
-            d3.select(this).attr("transform", `translate(${d.y},${d.x})`);
-            svg.selectAll(".tree-link").attr("d", d3.linkHorizontal().x(d => d.y).y(d => d.x));
-        }
-        function dragended(event, d) {
-            if (!event.active) simulation.alphaTarget(0);
+    // --- 7. دالة التكبير والتصغير ---
+    const zoomBehavior = d3.zoom()
+        .scaleExtent([0.1, 4])
+        .on("zoom", (event) => {
+            svg.select(".tree-g").attr("transform", event.transform);
+        });
+
+    // --- 8. دالة السحب والإفلات (مُصلحة بالكامل) ---
+    const dragBehavior = d3.drag()
+        .on("start", (event, d) => {
+            d3.select(event.sourceEvent.target.parentNode).raise().classed("active", true);
+        })
+        .on("drag", (event, d) => {
+            // تحديث الإحداثيات
+            d.x = event.y;
+            d.y = event.x;
+            // تطبيق التحويل مباشرة
+            d3.select(event.sourceEvent.target.parentNode)
+                .attr("transform", `translate(${d.y},${d.x})`);
+            // إعادة رسم الروابط
+            svg.selectAll(".tree-link").attr("d", d3.linkHorizontal()
+                .x(d => d.y)
+                .y(d => d.x)
+            );
+            // **الحل النهائي: منع الحدث من الانتقال إلى التكبير**
+            event.sourceEvent.stopPropagation();
+        })
+        .on("end", (event, d) => {
+            d3.select(event.sourceEvent.target.parentNode).classed("active", false);
+            // حفظ الموقع الجديد في بيانات العضو الأصلية
             const member = findMember(d.data.id);
-            if(member) { member.manualX = d.x; member.manualY = d.y; }
-            svg.classed("dragging", false);
-        }
-        return d3.drag().on("start", dragstarted).on("drag", dragged).on("end", dragended);
-    }
+            if(member) {
+                member.manualX = d.x;
+                member.manualY = d.y;
+            }
+        });
 
-    // --- 8. دالة رسم الشجرة ---
+    // --- 9. دالة رسم الشجرة ---
     function renderTree() {
         svg.selectAll("*").remove();
         updateDimensions();
+
         const hierarchyRoot = buildHierarchy(familyData.members);
         if (!hierarchyRoot) return;
-        const margin = {top: 50, right: 50, bottom: 50, left: 50};
-        const width = +svg.attr("width");
-        const height = +svg.attr("height");
-        const g = svg.append("g");
+
+        const treeG = svg.append("g").attr("class", "tree-g");
+        
         const treeNodes = treeLayout(hierarchyRoot).descendants();
         const treeLinks = hierarchyRoot.links();
+
         treeNodes.forEach(d => {
             const member = findMember(d.data.id);
             if (member && member.manualX !== undefined && member.manualY !== undefined) {
-                d.x = member.manualX; d.y = member.manualY;
+                d.x = member.manualX;
+                d.y = member.manualY;
             }
         });
+
         const displayNodes = treeNodes.filter(d => !d.data.isArtificial);
-        const link = g.selectAll(".tree-link").data(treeLinks).enter().append("path").attr("class", "tree-link").attr("d", d3.linkHorizontal().x(d => d.y).y(d => d.x));
-        const node = g.selectAll(".person-node").data(displayNodes).enter().append("g")
+
+        // رسم الروابط
+        treeG.selectAll(".tree-link")
+            .data(treeLinks)
+            .enter().append("path")
+            .attr("class", "tree-link")
+            .attr("d", d3.linkHorizontal().x(d => d.y).y(d => d.x));
+
+        // رسم العقد
+        const node = treeG.selectAll(".person-node")
+            .data(displayNodes)
+            .enter().append("g")
             .attr("class", d => `person-node ${d.data.gender} ${d.data.deathYear ? 'deceased' : ''}`)
             .attr("transform", d => `translate(${d.y},${d.x})`)
             .on("click", (event, d) => showDetails(d.data.id))
-            .call(drag());
+            .call(dragBehavior); // تفعيل السحب
+
         node.append("defs").append("clipPath").attr("id", d => `clip-${d.data.id}`).append("circle").attr("r", 30);
         node.append("image")
             .attr("xlink:href", d => d.data.photo || `https://ui-avatars.com/api/?name=${encodeURIComponent(d.data.name)}&background=${d.data.gender === 'male' ? '3498db' : 'e91e63'}&color=fff&size=60`)
@@ -147,20 +175,28 @@ document.addEventListener('DOMContentLoaded', () => {
             .style("font-size", "12px")
             .style("fill", "#555")
             .text(d => calculateAge(d.data));
-        const treeBoundingBox = g.node().getBBox();
-        const dx = (width - treeBoundingBox.width) / 2 - treeBoundingBox.x;
-        const dy = (height - treeBoundingBox.height) / 2 - treeBoundingBox.y;
-        const finalTransform = `translate(${dx + margin.left}, ${dy + margin.top})`;
-        g.attr("transform", finalTransform);
+            
+        svg.call(zoomBehavior);
+        
+        // توسيط الشجرة في البداية
+        const treeBoundingBox = treeG.node().getBBox();
+        const fullWidth = +svg.attr("width");
+        const fullHeight = +svg.attr("height");
+        const midX = treeBoundingBox.x + treeBoundingBox.width / 2;
+        const midY = treeBoundingBox.y + treeBoundingBox.height / 2;
+        const scale = 0.8 / Math.max(treeBoundingBox.width / fullWidth, treeBoundingBox.height / fullHeight);
+        const translate = [fullWidth / 2 - scale * midX, fullHeight / 2 - scale * midY];
+        svg.call(zoomBehavior.transform, d3.zoomIdentity.translate(translate[0], translate[1]).scale(scale));
     }
 
-    // --- 9. دوال النوافذ المنبثقة والعلاقات الذكية ---
+    // --- 10. دوال النوافذ المنبثقة ---
     function openModal(modal) { modal.style.display = 'block'; }
     function closeModal(modal) {
         modal.style.display = 'none';
         memberForm.reset();
         relationshipOptionsDiv.innerHTML = '';
-        currentViewingMember = null; currentPhotoDataUrl = null;
+        currentViewingMember = null;
+        currentPhotoDataUrl = null; // تصفير الصورة عند الإغلاق
     }
     function populateRelationSelect() {
         relationToSelect.innerHTML = '<option value="">-- لا شيء (جذر الشجرة) --</option>';
@@ -236,7 +272,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- 10. معالجات الأحداث ---
+    // --- 11. معالجات الأحداث ---
     addMemberBtn.addEventListener('click', openAddModal);
     shareBtn.addEventListener('click', () => { alert('تم نسخ رابط المشاركة!\n(هذه ميزة تجريبية)'); });
     relationToSelect.addEventListener('change', updateRelationshipOptions);
@@ -257,13 +293,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const relationType = relationTypeInput ? relationTypeInput.value : null;
         
         const memberId = parseInt(formData.get('member-id'));
-        if (memberId) {
+        if (memberId) { // تعديل
             const member = findMember(memberId);
             if (member) {
                 member.name = name; member.gender = gender; member.birthYear = birthYear; member.deathYear = deathYear; member.story = story;
                 if(currentPhotoDataUrl) member.photo = currentPhotoDataUrl;
             }
-        } else {
+        } else { // إضافة
             const newMember = { id: familyData.nextId++, name, gender, birthYear, deathYear, story, photo: currentPhotoDataUrl, parentId: null, spouseId: null };
             if (relationToId && relationType) {
                 const relative = findMember(relationToId);
@@ -272,6 +308,10 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             familyData.members.push(newMember);
         }
+
+        // **الحل النهائي: تصفير متغير الصورة فورًا بعد الاستخدام**
+        currentPhotoDataUrl = null;
+
         closeModal(memberModal);
         checkUIState();
     });
@@ -289,7 +329,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('click', (e) => { if (e.target === memberModal) closeModal(memberModal); if (e.target === detailsModal) closeModal(detailsModal); });
     window.addEventListener('resize', () => { if (familyData.members.length > 0) { renderTree(); } });
 
-    // --- 11. التشغيل الأولي ---
+    // --- 12. التشغيل الأولي ---
     const collaboratorList = document.querySelector('.collaborator-list');
     collaborators.forEach(name => { const div = document.createElement('div'); div.className = 'collaborator'; div.textContent = name; collaboratorList.appendChild(div); });
     checkUIState();
