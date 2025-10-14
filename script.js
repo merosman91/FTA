@@ -1,5 +1,15 @@
 document.addEventListener('DOMContentLoaded', () => {
 
+    // --- فحص أساسي: هل تم تحميل مكتبة D3.js؟ ---
+    if (typeof d3 === 'undefined') {
+        document.body.innerHTML = `
+            <div style="text-align:center; padding: 50px; font-family: 'Tajawal', sans-serif; direction: rtl; color: #e74c3c;">
+                <h2>خطأ: لم يتم تحميل مكتبة D3.js</h2>
+                <p>يرجى التأكد من أن ملف 'd3.v7.min.js' موجود في نفس المجلد وأنك قمت بتعديل ملف index.html بشكل صحيح.</p>
+            </div>`;
+        return; // إيقاف باقي الكود
+    }
+
     // =================================================================
     // 1. STATE & DATA (الحالة والبيانات)
     // =================================================================
@@ -157,11 +167,9 @@ document.addEventListener('DOMContentLoaded', () => {
     function checkUIState() {
         if (familyData.members.length === 0) {
             elements.emptyState.style.display = 'flex';
-            // تم تصحيح الخطأ هنا
             elements.svg.node().style.display = 'none';
         } else {
             elements.emptyState.style.display = 'none';
-            // وتم تصحيحه هنا أيضًا
             elements.svg.node().style.display = 'block';
             renderTree();
         }
