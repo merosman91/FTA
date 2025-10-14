@@ -3,8 +3,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // =================================================================
     // 1. STATE & DATA (الحالة والبيانات)
     // =================================================================
-    // هذه هي مصفوفة البيانات الرئيسية. هي المصدر الوحيد للحقيقة.
-    // لا يتم تعديلها إلا من خلال الدوال المخصصة لذلك في الأسفل.
     let familyData = {
         members: [],
         nextId: 1
@@ -29,7 +27,6 @@ document.addEventListener('DOMContentLoaded', () => {
         editMemberBtn: document.getElementById('edit-member-btn'),
         deleteMemberBtn: document.getElementById('delete-member-btn'),
         photoInput: document.getElementById('photo'),
-        // تفاصيل
         detailsName: document.getElementById('details-name'),
         detailsPhoto: document.getElementById('details-photo'),
         detailsInfo: document.getElementById('details-info'),
@@ -54,10 +51,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // =================================================================
-    // 4. RENDERING FUNCTION (وظيفة العرض - الأهم)
+    // 4. RENDERING FUNCTION (وظيفة العرض)
     // =================================================================
-    // هذه الدالة مسؤولة عن رسم الشجرة بالكامل.
-    // يمكن استدعاؤها في أي وقت وستقوم بتحديث العرض بناءً على 'familyData'.
     function renderTree() {
         const width = elements.treeContainer.clientWidth;
         const height = elements.treeContainer.clientHeight;
@@ -73,7 +68,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const treeG = elements.svg.append("g").attr("class", "tree-g");
         const treeLayout = d3.tree().size([innerHeight, innerWidth]);
 
-        // بناء التسلسل الهرمي بطريقة آمنة (لا تعدل البيانات الأصلية)
         const dataCopy = JSON.parse(JSON.stringify(familyData.members));
         const roots = dataCopy.filter(d => !d.parentId);
         if (roots.length > 1) {
@@ -88,7 +82,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const treeLinks = hierarchyRoot.links();
         const displayNodes = treeNodes.filter(d => !d.data.isArtificial);
 
-        // تطبيق المواقع اليدوية إذا كانت موجودة
         treeNodes.forEach(d => {
             const originalMember = findMember(d.data.id);
             if (originalMember && originalMember.manualX !== undefined) {
@@ -97,14 +90,12 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // رسم الروابط
         treeG.selectAll(".tree-link")
             .data(treeLinks)
             .enter().append("path")
             .attr("class", "tree-link")
             .attr("d", d3.linkHorizontal().x(d => d.y).y(d => d.x));
 
-        // رسم العقد
         const node = treeG.selectAll(".person-node")
             .data(displayNodes)
             .enter().append("g")
@@ -121,13 +112,11 @@ document.addEventListener('DOMContentLoaded', () => {
         node.append("text").attr("dy", 50).style("text-anchor", "middle").text(d => d.data.name);
         node.append("text").attr("dy", 65).style("text-anchor", "middle").style("font-size", "12px").style("fill", "#555").text(d => calculateAge(d.data));
 
-        // إعداد التفاعلات (سحب، تكبير)
         setupInteractions(treeG);
         centerView(treeG);
     }
 
     function setupInteractions(treeG) {
-        // السحب والإفلات
         const dragBehavior = d3.drag()
             .on("drag", (event, d) => {
                 d.x = event.y;
@@ -145,7 +134,6 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         elements.svg.selectAll(".person-node").call(dragBehavior);
 
-        // التكبير والتصغير
         zoomBehavior = d3.zoom().scaleExtent([0.1, 4]).on("zoom", (event) => {
             treeG.attr("transform", event.transform);
         });
@@ -169,10 +157,12 @@ document.addEventListener('DOMContentLoaded', () => {
     function checkUIState() {
         if (familyData.members.length === 0) {
             elements.emptyState.style.display = 'flex';
-            elements.svg.style('display', 'none';
+            // تم تصحيح الخطأ هنا
+            elements.svg.node().style.display = 'none';
         } else {
             elements.emptyState.style.display = 'none';
-            elements.svg.style('display', 'block';
+            // وتم تصحيحه هنا أيضًا
+            elements.svg.node().style.display = 'block';
             renderTree();
         }
     }
@@ -254,7 +244,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const formData = new FormData(elements.memberForm);
         const memberId = parseInt(formData.get('member-id'));
         
-        // قراءة الصورة بشكل آمن داخل المعالج
         let photoDataUrl = null;
         const photoFile = elements.photoInput.files[0];
         if (photoFile) {
@@ -274,12 +263,12 @@ document.addEventListener('DOMContentLoaded', () => {
             photo: photoDataUrl,
         };
 
-        if (memberId) { // --- وضع التعديل ---
+        if (memberId) {
             const memberIndex = familyData.members.findIndex(m => m.id === memberId);
             if (memberIndex !== -1) {
                 familyData.members[memberIndex] = { ...familyData.members[memberIndex], ...memberData };
             }
-        } else { // --- وضع الإضافة ---
+        } else {
             const relationToId = parseInt(formData.get('relation-to'));
             const relationTypeInput = document.querySelector('input[name="dynamic-relation"]:checked');
             const relationType = relationTypeInput ? relationTypeInput.value : null;
