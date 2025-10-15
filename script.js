@@ -1,4 +1,4 @@
-// الخطوة 5: إضافة الصور وحساب العمر
+// الخطوة 5: إضافة الصور وحساب العمر (مع تحسين مظهر العقد)
 
 console.log("ملف script.js تم تحميله بنجاح!");
 
@@ -18,11 +18,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const closeBtns = document.querySelectorAll('.close-btn');
     const emptyState = document.getElementById('empty-state');
     const treeSvg = d3.select("#tree-svg");
-    const photoInput = document.getElementById('photo'); // إضافة مدخل الصورة
+    const photoInput = document.getElementById('photo');
 
-    // --- دالة مساعدة جديدة: حساب العمر ---
+    // --- دالة مساعدة: حساب العمر ---
     function calculateAge(member) {
-        if (!member.birthYear) return ''; // لا تظهر عمرًا إذا لم تكن سنة الميلاد موجودة
+        if (!member.birthYear) return '';
         const endYear = member.deathYear || new Date().getFullYear();
         const age = endYear - member.birthYear;
         return member.deathYear ? `${age} (تُوفي)` : `${age} عامًا`;
@@ -40,14 +40,12 @@ document.addEventListener('DOMContentLoaded', () => {
             .append("g")
             .attr("transform", (d, i) => `translate(${50 + i * 150}, 100)`);
 
-        // --- إضافة الصور ---
         nodes.append("defs").append("clipPath")
             .attr("id", d => `clip-${d.id}`)
             .append("circle").attr("r", 30);
 
         nodes.append("image")
             .attr("xlink:href", d => {
-                // إذا كانت هناك صورة، استخدمها. وإلا، استخدم الصورة الافتراضية.
                 return d.photo || `https://ui-avatars.com/api/?name=${encodeURIComponent(d.name)}&background=${d.gender === 'male' ? '3498db' : 'e91e63'}&color=fff&size=60`;
             })
             .attr("x", -30).attr("y", -30).attr("width", 60).attr("height", 60)
@@ -55,22 +53,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
         nodes.append("circle")
             .attr("r", 30)
-            .style("fill", "transparent") // نجعل الدائرة شفافة لنرى الصورة من تحتها
+            .style("fill", "transparent")
             .style("stroke", '#2c3e50')
             .style("stroke-width", 3);
 
+        // --- تحسين عرض الاسم ---
         nodes.append("text")
             .text(d => d.name)
             .attr("text-anchor", "middle")
-            .attr("dy", 5)
-            .style("fill", "white")
+            .attr("dy", 45) // **تغيير 1: نقل الاسم إلى أسفل الدائرة**
+            .style("fill", "#34495e") // **تغيير 2: تغيير اللون إلى لون داكن ليكون واضحًا**
             .style("font-weight", "bold");
 
-        // --- إضافة نص العمر ---
         nodes.append("text")
             .text(d => calculateAge(d))
             .attr("text-anchor", "middle")
-            .attr("dy", 65) // وضع العمر تحت الاسم
+            .attr("dy", 65)
             .style("font-size", "12px")
             .style("fill", "#555");
     }
@@ -94,23 +92,18 @@ document.addEventListener('DOMContentLoaded', () => {
     closeBtns.forEach(btn => { btn.addEventListener('click', () => { memberModal.style.display = 'none'; }); });
     window.addEventListener('click', (event) => { if (event.target === memberModal) { memberModal.style.display = 'none'; } });
 
-    // --- تحديث معالج إرسال النموذج للتعامل مع الصور ---
     memberForm.addEventListener('submit', async (event) => {
         event.preventDefault();
         const formData = new FormData(memberForm);
-
-        // --- معالجة الصورة ---
         let photoDataUrl = null;
         const photoFile = photoInput.files[0];
         if (photoFile) {
-            // نستخدم FileReader لقراءة الصورة وتحويلها إلى نص يمكن حفظه
             photoDataUrl = await new Promise(resolve => {
                 const reader = new FileReader();
                 reader.onload = e => resolve(e.target.result);
                 reader.readAsDataURL(photoFile);
             });
         }
-
         const newMember = {
             id: familyData.nextId++,
             name: formData.get('name'),
@@ -118,7 +111,7 @@ document.addEventListener('DOMContentLoaded', () => {
             birthYear: parseInt(formData.get('birth-year')) || null,
             deathYear: parseInt(formData.get('death-year')) || null,
             story: formData.get('story'),
-            photo: photoDataUrl, // إضافة الصورة إلى بيانات العضو
+            photo: photoDataUrl,
         };
         familyData.members.push(newMember);
         console.log("تمت إضافة عضو جديد:", newMember);
