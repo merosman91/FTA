@@ -1,4 +1,4 @@
-// الخطوة 4: رسم الأفراد على الشجرة
+// الخطوة 4: رسم الأفراد على الشجرة (تم تصحيح الخطأ)
 
 console.log("ملف script.js تم تحميله بنجاح!");
 
@@ -17,34 +17,27 @@ document.addEventListener('DOMContentLoaded', () => {
     const memberForm = document.getElementById('member-form');
     const closeBtns = document.querySelectorAll('.close-btn');
     const emptyState = document.getElementById('empty-state');
-    const treeSvg = d3.select("#tree-svg"); // استخدام D3 لاختيار الـ SVG
+    const treeSvg = d3.select("#tree-svg");
 
-    // --- وظيفة الرسم (الجديدة) ---
+    // --- وظيفة الرسم ---
     function renderTree() {
         console.log("جاري رسم الشجرة...");
-        
-        // مسح أي شيء مرسوم مسبقًا
         treeSvg.selectAll("*").remove();
-
-        if (familyData.members.length === 0) return; // لا ترسم شيئًا إذا لم يكن هناك أفراد
-
-        // رسم دائرة لكل عضو في العائلة
+        if (familyData.members.length === 0) return;
         const nodes = treeSvg.selectAll("g")
             .data(familyData.members)
             .enter()
-            .append("g") // نضيف كل دائرة داخل مجموعة (g) لتسهيل التعامل معها
-            .attr("transform", (d, i) => `translate(${50 + i * 150}, 100)`); // وضع الأفراد في صف أفقي
-
+            .append("g")
+            .attr("transform", (d, i) => `translate(${50 + i * 150}, 100)`);
         nodes.append("circle")
             .attr("r", 30)
             .style("fill", d => d.gender === 'male' ? '#3498db' : '#e91e63')
             .style("stroke", '#2c3e50')
             .style("stroke-width", 3);
-
         nodes.append("text")
             .text(d => d.name)
             .attr("text-anchor", "middle")
-            .attr("dy", 5) // محاذاة النص في منتصف الدائرة
+            .attr("dy", 5)
             .style("fill", "white")
             .style("font-weight", "bold");
     }
@@ -54,11 +47,13 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log("تحديث حالة الواجهة. عدد الأفراد:", familyData.members.length);
         if (familyData.members.length === 0) {
             emptyState.style.display = 'flex';
-            treeSvg.style('display', 'none';
+            // تم تصحيح الخطأ هنا
+            treeSvg.node().style.display = 'none';
         } else {
             emptyState.style.display = 'none';
-            treeSvg.style('display', 'block';
-            renderTree(); // استدعاء دالة الرسم عند وجود أفراد
+            // وتم تصحيحه هنا أيضًا
+            treeSvg.node().style.display = 'block';
+            renderTree();
         }
     }
 
@@ -83,7 +78,7 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log("تمت إضافة عضو جديد:", newMember);
         memberForm.reset();
         memberModal.style.display = 'none';
-        checkUIState(); // تحديث الواجهة سيؤدي إلى استدعاء renderTree
+        checkUIState();
     });
 
     // --- الإعداد الأولي ---
