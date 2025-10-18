@@ -1,44 +1,46 @@
-// اختبار تشخيصي بسيط للغاية: هل تعمل الأزرار؟
+// البناء خطوة بخطوة: الخطوة 1 - فتح وإغلاق النافذة
 
 document.addEventListener('DOMContentLoaded', () => {
 
-    console.log("تم تحميل الصفحة. بدء اختبار الأزرار...");
+    console.log("تم تحميل الصفحة. بدء بناء التطبيق خطوة بخطوة...");
 
-    // البحث عن الزر الرئيسي
+    // --- عناصر DOM ---
     const addBtn = document.getElementById('add-member-btn');
     const shareBtn = document.getElementById('share-btn');
+    const memberModal = document.getElementById('member-modal');
+    const closeBtns = document.querySelectorAll('.close-btn');
 
-    // إنشاء عنصر لعرض الرسائل على الصفحة
-    const statusDiv = document.createElement('div');
-    statusDiv.style.position = 'fixed';
-    statusDiv.style.top = '10px';
-    statusDiv.style.left = '10px';
-    statusDiv.style.padding = '10px';
-    statusDiv.style.backgroundColor = '#f39c12';
-    statusDiv.style.color = 'white';
-    statusDiv.style.borderRadius = '5px';
-    statusDiv.style.zIndex = '10000';
-    document.body.appendChild(statusDiv);
-
-
+    // --- معالجات الأحداث ---
     if (addBtn) {
-        statusDiv.textContent = "نجح: تم العثور على زر الإضافة. جرب النقر عليه.";
+        console.log("ربط حدث النقر بزر الإضافة...");
         addBtn.addEventListener('click', () => {
-            alert("نجاح! زر الإضافة يعمل. المشكلة كانت في الكود المعقد.");
+            console.log("تم النقر على زر الإضافة! جاري فتح النافذة.");
+            memberModal.style.display = 'block';
         });
-    } else {
-        statusDiv.textContent = "فشل: لم يتم العثور على زر الإضافة. المشكلة في ملف HTML أو في ربط الملفات.";
-        statusDiv.style.backgroundColor = '#e74c3c';
     }
 
     if (shareBtn) {
         shareBtn.addEventListener('click', () => {
-            alert("نجاح! زر المشاركة يعمل أيضًا.");
+            alert("زر المشاركة يعمل!");
         });
-    } else {
-        if(addBtn) { // لا نغير الرسالة إذا فشل أول زر بالفعل
-            statusDiv.textContent = "فشل: لم يتم العثور على زر المشاركة أيضًا.";
-            statusDiv.style.backgroundColor = '#e74c3c';
-        }
     }
+
+    if (closeBtns.length > 0) {
+        console.log(`ربط أحداث الإغلاق لـ ${closeBtns.length} زر...`);
+        closeBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                console.log("تم النقر على زر الإغلاق! جاري إغلاق النافذة.");
+                memberModal.style.display = 'none';
+            });
+        });
+    }
+
+    // إغلاق النافذة عند النقر خارجها
+    window.addEventListener('click', (event) => {
+        if (event.target === memberModal) {
+            memberModal.style.display = 'none';
+        }
+    });
+
+    console.log("اكتمل الإعداد الأساسي للواجهة.");
 });
