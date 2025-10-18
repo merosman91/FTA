@@ -68,30 +68,9 @@ body {
     background-color: #7f8c8d;
 }
 
-.collaborators {
-    margin-top: 1rem;
-    padding-top: 1rem;
-    border-top: 1px solid rgba(255,255,255,0.2);
-    font-size: 0.9rem;
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-}
-
-.collaborator-list {
-    display: flex;
-    gap: 0.5rem;
-}
-
-.collaborator {
-    background-color: rgba(255,255,255,0.2);
-    padding: 0.2rem 0.8rem;
-    border-radius: 12px;
-}
-
 .tree-container {
     width: 100%;
-    height: calc(100vh - 180px);
+    height: calc(100vh - 120px);
     overflow: auto;
     position: relative;
 }
@@ -111,10 +90,6 @@ body {
     display: block;
     width: 100%;
     height: 100%;
-    cursor: grab;
-}
-#tree-svg.dragging {
-    cursor: grabbing;
 }
 
 /* أنماط العقد في الشجرة */
@@ -124,21 +99,14 @@ body {
 
 .person-node circle {
     stroke-width: 3px;
-    transition: r 0.2s ease-in-out, filter 0.2s;
+    transition: r 0.2s ease-in-out;
 }
 
 .person-node.male circle { fill: var(--male-color); stroke: var(--primary-color); }
 .person-node.female circle { fill: var(--female-color); stroke: var(--primary-color); }
 
-.person-node.deceased {
-    opacity: var(--deceased-opacity);
-}
-
-.person-node.deceased circle {
-    stroke-dasharray: 5, 5;
-}
-
 .person-node:hover circle {
+    r: 35;
     filter: drop-shadow(0 0 8px rgba(0,0,0,0.3));
 }
 
@@ -147,8 +115,6 @@ body {
     font-weight: bold;
     font-size: 14px;
     pointer-events: none;
-    /* تم تغيير اللون إلى داكن */
-    fill: var(--primary-color);
 }
 
 .tree-link {
@@ -172,7 +138,7 @@ body {
 
 .modal-content {
     background-color: var(--card-background);
-    margin: 2% auto;
+    margin: 5% auto;
     padding: 2rem;
     border-radius: 8px;
     width: 90%;
@@ -246,32 +212,33 @@ body {
     background-color: #c0392b !important;
 }
 
-/* أنماط خيارات العلاقة الذكية */
-.relationship-options {
-    margin-bottom: 1.5rem;
-    border: 1px solid #bdc3c7;
-    border-radius: 4px;
-    padding: 1rem;
-    background-color: #f8f9fa;
+/* أنماط قائمة السياق */
+.context-menu {
+    position: absolute;
+    display: none;
+    background-color: white;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    box-shadow: 0px 2px 5px rgba(0,0,0,0.2);
+    z-index: 1000;
+    overflow: hidden;
 }
 
-.relationship-options h4 {
-    margin-top: 0;
-    margin-bottom: 1rem;
-    text-align: center;
-    color: var(--primary-color);
-}
-
-.relationship-option {
-    display: flex;
-    align-items: center;
-    margin-bottom: 0.5rem;
+.context-menu button {
+    display: block;
+    width: 100%;
+    padding: 10px 15px;
+    border: none;
+    background: none;
+    text-align: right;
     cursor: pointer;
+    font-size: 1rem;
+    font-family: 'Tajawal', sans-serif;
+    color: var(--text-color);
 }
 
-.relationship-option input[type="radio"] {
-    margin-left: 0.5rem;
-    width: auto;
+.context-menu button:hover {
+    background-color: #f0f0f0;
 }
 
 .details-header {
@@ -325,33 +292,4 @@ body {
 @keyframes slideIn {
     from { transform: translateY(-50px); opacity: 0; }
     to { transform: translateY(0); opacity: 1; }
-}
-
-/* أنماط قائمة السياق */
-.context-menu {
-    position: absolute;
-    display: none;
-    background-color: white;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    box-shadow: 0px 2px 5px rgba(0,0,0,0.2);
-    z-index: 1000;
-    overflow: hidden;
-}
-
-.context-menu button {
-    display: block;
-    width: 100%;
-    padding: 10px 15px;
-    border: none;
-    background: none;
-    text-align: right;
-    cursor: pointer;
-    font-size: 1rem;
-    font-family: 'Tajawal', sans-serif;
-    color: var(--text-color);
-}
-
-.context-menu button:hover {
-    background-color: #f0f0f0;
 }
