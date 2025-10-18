@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- بيانات التطبيق (State) ---
     let familyData = { members: [], nextId: 1 };
-    let pendingRelationship = null; // لتخزين العلاقة المعلقة
+    let pendingRelationship = null;
 
     // --- عناصر DOM ---
     const elements = {
@@ -23,14 +23,25 @@ document.addEventListener('DOMContentLoaded', () => {
         editMemberBtn: document.getElementById('edit-member-btn'),
         deleteMemberBtn: document.getElementById('delete-member-btn'),
         photoInput: document.getElementById('photo'),
-        // عناصر التفاصيل
         detailsName: document.getElementById('details-name'),
         detailsPhoto: document.getElementById('details-photo'),
         detailsInfo: document.getElementById('details-info'),
         detailsStory: document.getElementById('details-story'),
-        // قائمة السياق
         contextMenu: document.getElementById('context-menu'),
     };
+
+    // --- فحص تصحيح (جديد) ---
+    console.log("فحص العناصر:");
+    console.log("addMemberBtn:", elements.addMemberBtn);
+    console.log("shareBtn:", elements.shareBtn);
+    console.log("memberForm:", elements.memberForm);
+    console.log("contextMenu:", elements.contextMenu);
+    if (!elements.addMemberBtn || !elements.shareBtn || !elements.memberForm || !elements.contextMenu) {
+        console.error("خطأ: لم يتم العثور على أحد العناصر الأساسية. تأكد من تطابق ملفات HTML و JavaScript.");
+        return;
+    }
+    console.log("تم العثور على جميع العناصر بنجاح!");
+
 
     let currentViewingMemberId = null;
 
@@ -64,7 +75,7 @@ document.addEventListener('DOMContentLoaded', () => {
         modal.style.display = 'none';
         elements.memberForm.reset();
         currentViewingMemberId = null;
-        pendingRelationship = null; // إعادة تعيين العلاقة المعلقة
+        pendingRelationship = null;
     }
     function showDetails(memberId) {
         const member = findMember(memberId); if (!member) return;
@@ -114,36 +125,28 @@ document.addEventListener('DOMContentLoaded', () => {
         node.append("text").text(d => calculateAge(d.data)).attr("text-anchor", "middle").attr("dy", 65).style("font-size", "12px").style("fill", "#555");
     }
 
-    // --- وظيفة قائمة السياق (جديدة) ---
+    // --- وظيفة قائمة السياق ---
     function showContextMenu(event, memberId) {
-        event.preventDefault(); // منع القائمة الافتراضية للمتصفح
+        event.preventDefault();
         elements.contextMenu.style.display = 'block';
         elements.contextMenu.style.left = `${event.pageX}px`;
         elements.contextMenu.style.top = `${event.pageY}px`;
-
-        // حفظ العضو الذي تم النقر عليه لاستخدامه لاحقًا
         elements.contextMenu.dataset.relatedToId = memberId;
     }
-
-    function hideContextMenu() {
-        elements.contextMenu.style.display = 'none';
-    }
+    function hideContextMenu() { elements.contextMenu.style.display = 'none'; }
 
     // --- معالجات الأحداث ---
     elements.addMemberBtn.addEventListener('click', () => {
-        pendingRelationship = null; // إضافة فرد عادي بدون علاقة
+        pendingRelationship = null;
         elements.modalTitle.textContent = 'إضافة فرد جديد';
         openModal(elements.memberModal);
     });
 
-    // معالج النقر على أزرار قائمة السياق
     elements.contextMenu.addEventListener('click', (e) => {
         if (e.target.tagName === 'BUTTON') {
             const relationType = e.target.dataset.relation;
             const relatedToId = parseInt(elements.contextMenu.dataset.relatedToId);
-            
             pendingRelationship = { type: relationType, relatedToId: relatedToId };
-            
             hideContextMenu();
             elements.modalTitle.textContent = `إضافة ${e.target.textContent}`;
             openModal(elements.memberModal);
@@ -161,42 +164,29 @@ document.addEventListener('DOMContentLoaded', () => {
                 reader.readAsDataURL(elements.photoInput.files[0]);
             });
         }
-
         const newMember = {
-            id: familyData.nextId++,
-            name: formData.get('name'),
-            gender: formData.get('gender'),
-            birthYear: parseInt(formData.get('birth-year')) || null,
-            deathYear: parseInt(formData.get('death-year')) || null,
-            story: formData.get('story'),
-            photo: photoDataUrl,
-            parentId: null, spouseId: null
+            id: familyData.nextId++, name: formData.get('name'), gender: formData.get('gender'),
+            birthYear: parseInt(formData.get('birth-year')) || null, deathYear: parseInt(formData.get('death-year')) || null,
+            story: formData.get('story'), photo: photoDataUrl, parentId: null, spouseId: null
         };
-
-        // تطبيق العلاقة المعلقة
         if (pendingRelationship) {
             const relatedMember = findMember(pendingRelationship.relatedToId);
             if (relatedMember) {
                 if (pendingRelationship.type === 'spouse') {
-                    newMember.spouseId = pendingRelationship.relatedToId;
-                    relatedMember.spouseId = newMember.id;
-                } else {
-                    newMember.parentId = pendingRelationship.relatedToId;
-                }
+                    newMember.spouseId = pendingRelationship.relatedToId; relatedMember.spouseId = newMember.id;
+                } else { newMember.parentId = pendingRelationship.relatedToId; }
             }
         }
-        
         familyData.members.push(newMember);
         closeModal(elements.memberModal);
         checkUIState();
     });
 
-    elements.editMemberBtn.addEventListener('click', () => { /* ... يمكن إضافته لاحقًا ... */ });
-    elements.deleteMemberBtn.addEventListener('click', () => { /* ... يمكن إضافته لاحقًا ... */ });
+    elements.editMemberBtn.addEventListener('click', () => { /* ... */ });
+    elements.deleteMemberBtn.addEventListener('click', () => { /* ... */ });
 
     elements.closeBtns.forEach(btn => { btn.addEventListener('click', () => closeModal(btn.closest('.modal')); });
     window.addEventListener('click', (e) => { if (e.target === elements.memberModal) closeModal(elements.memberModal); if (e.target === elements.detailsModal) closeModal(elements.detailsModal); });
-    // إخفاء القائمة السياقية عند النقر في أي مكان آخر
     document.addEventListener('click', (e) => { if (!elements.contextMenu.contains(e.target)) hideContextMenu(); });
 
     // --- الإعداد الأولي ---
