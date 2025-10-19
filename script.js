@@ -1,15 +1,9 @@
-// البناء خطوة بخطوة: الخطوة 2 - حفظ بيانات النموذج
+// البناء خطوة بخطوة: الخطوة 3 - عرض الأفراد على الشجرة
 
 document.addEventListener('DOMContentLoaded', () => {
 
-    console.log("تم تحميل الصفحة. بدء بناء التطبيق خطوة بخطوة...");
-
     // --- بيانات التطبيق (State) ---
-    // هنا سنحتفظ ببيانات العائلة في الذاكرة
-    let familyData = {
-        members: [],
-        nextId: 1 // لإنشاء معرفات فريدة لكل فرد
-    };
+    let familyData = { members: [], nextId: 1 };
 
     // --- عناصر DOM ---
     const addBtn = document.getElementById('add-member-btn');
@@ -17,50 +11,89 @@ document.addEventListener('DOMContentLoaded', () => {
     const memberModal = document.getElementById('member-modal');
     const memberForm = document.getElementById('member-form');
     const closeBtns = document.querySelectorAll('.close-btn');
+    const emptyState = document.getElementById('empty-state');
+    const treeSvg = d3.select("#tree-svg"); // استخدام D3 لاختيار الـ SVG
+
+    // --- دالة مساعدة جديدة: حساب العمر ---
+    function calculateAge(member) {
+        if (!member.birthYear) return '';
+        const endYear = member.deathYear || new Date().getFullYear();
+        const age = endYear - member.birthYear;
+        return member.deathYear ? `${age} (تُوفي)` : `${age} عامًا`;
+    }
+
+    // --- وظيفة الرسم (الجديدة) ---
+    function renderTree() {
+        console.log("جاري رسم الشجرة...");
+        treeSvg.selectAll("*").remove();
+        if (familyData.members.length === 0) return;
+        
+        const nodes = treeSvg.selectAll("g")
+            .data(familyData.members)
+            .enter()
+            .append("g") // نضيف كل دائرة داخل مجموعة (g) لتسهيل التعامل معها
+            .attr("transform", (d, i) => `translate(${50 + i * 150}, 100)`); // وضع الأفراد في صف أفقي
+
+        nodes.append("circle")
+            .attr("r", 30)
+            .style("fill", d => d.gender === 'male' ? '#3498db' : '#e91e63')
+            .style("stroke", '#2c3e50')
+            .style("stroke-width", 3);
+
+        nodes.append("text")
+            .text(d => d.name)
+            .attr("text-anchor", "middle")
+            .attr("dy", 5) // محاذاة النص في منتصف الدائرة
+            .style("fill", "white")
+            .style("font-weight", "bold");
+
+        // --- إضافة نص العمر ---
+        nodes.append("text")
+            .text(d => calculateAge(d))
+            .attr("text-anchor", "middle")
+            .attr("dy", 65) // وضع العمر تحت الاسم
+            .style("font-size", "12px")
+            .style("fill", "#555");
+    }
+
+    // --- وظائف التحكم في الواجهة ---
+    function checkUIState() {
+        console.log("تحديث حالة الواجهة. عدد الأفراد:", familyData.members.length);
+        if (familyData.members.length === 0) {
+            emptyState.style.display = 'flex';
+            treeSvg.node().style.display = 'none';
+        } else {
+            emptyState.style.display = 'none';
+            treeSvg.node().style.display = 'block';
+            renderTree(); // استدعاء دالة الرسم عند وجود أفراد
+        }
+    }
 
     // --- معالجات الأحداث ---
-    if (addBtn) {
-        addBtn.addEventListener('click', () => {
-            memberModal.style.display = 'block';
-        });
-    }
-
-    if (shareBtn) {
-        shareBtn.addEventListener('click', () => {
-            alert("زر المشاركة يعمل!");
-        });
-    }
-
+    addBtn.addEventListener('click', () => { memberModal.style.display = 'block'; });
+    shareBtn.addEventListener('click', () => { alert("زر المشاركة يعمل!"); });
     closeBtns.forEach(btn => { btn.addEventListener('click', () => { memberModal.style.display = 'none'; }); });
     window.addEventListener('click', (event) => { if (event.target === memberModal) { memberModal.style.display = 'none'; } });
 
-    // --- الحدث الأهم: حفظ بيانات النموذج ---
     memberForm.addEventListener('submit', (event) => {
-        // 1. منع إعادة تحميل الصفحة
         event.preventDefault();
-        console.log("تم إرسال النموذج! جاري حفظ البيانات...");
-
-        // 2. قراءة البيانات من حقول النموذج
         const formData = new FormData(memberForm);
         const newMember = {
-            id: familyData.nextId++, // إعطاء معرف فريد
+            id: familyData.nextId++,
             name: formData.get('name'),
             gender: formData.get('gender'),
             birthYear: parseInt(formData.get('birth-year')) || null,
             deathYear: parseInt(formData.get('death-year')) || null,
             story: formData.get('story'),
-            // سنضيف الصورة لاحقًا
         };
-
-        // 3. إضافة العضو الجديد إلى قائمة العائلة
         familyData.members.push(newMember);
         console.log("تمت إضافة عضو جديد:", newMember);
-        console.log("قائمة العائلة الحالية:", familyData);
-
-        // 4. إعادة تعيين النموذج وإغلاق النافذة
         memberForm.reset();
         memberModal.style.display = 'none';
+        checkUIState(); // تحديث الواجهة سيؤدي إلى استدعاء renderTree
     });
 
-    console.log("اكتمل الإعداد الأساسي للواجهة.");
+    // --- الإعداد الأولي ---
+    checkUIState();
+
 });
