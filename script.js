@@ -1,20 +1,26 @@
-// البناء خطوة بخطوة: الخطوة 1 - فتح وإغلاق النافذة
+// البناء خطوة بخطوة: الخطوة 2 - حفظ بيانات النموذج
 
 document.addEventListener('DOMContentLoaded', () => {
 
     console.log("تم تحميل الصفحة. بدء بناء التطبيق خطوة بخطوة...");
 
+    // --- بيانات التطبيق (State) ---
+    // هنا سنحتفظ ببيانات العائلة في الذاكرة
+    let familyData = {
+        members: [],
+        nextId: 1 // لإنشاء معرفات فريدة لكل فرد
+    };
+
     // --- عناصر DOM ---
     const addBtn = document.getElementById('add-member-btn');
     const shareBtn = document.getElementById('share-btn');
     const memberModal = document.getElementById('member-modal');
+    const memberForm = document.getElementById('member-form');
     const closeBtns = document.querySelectorAll('.close-btn');
 
     // --- معالجات الأحداث ---
     if (addBtn) {
-        console.log("ربط حدث النقر بزر الإضافة...");
         addBtn.addEventListener('click', () => {
-            console.log("تم النقر على زر الإضافة! جاري فتح النافذة.");
             memberModal.style.display = 'block';
         });
     }
@@ -25,21 +31,35 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    if (closeBtns.length > 0) {
-        console.log(`ربط أحداث الإغلاق لـ ${closeBtns.length} زر...`);
-        closeBtns.forEach(btn => {
-            btn.addEventListener('click', () => {
-                console.log("تم النقر على زر الإغلاق! جاري إغلاق النافذة.");
-                memberModal.style.display = 'none';
-            });
-        });
-    }
+    closeBtns.forEach(btn => { btn.addEventListener('click', () => { memberModal.style.display = 'none'; }); });
+    window.addEventListener('click', (event) => { if (event.target === memberModal) { memberModal.style.display = 'none'; } });
 
-    // إغلاق النافذة عند النقر خارجها
-    window.addEventListener('click', (event) => {
-        if (event.target === memberModal) {
-            memberModal.style.display = 'none';
-        }
+    // --- الحدث الأهم: حفظ بيانات النموذج ---
+    memberForm.addEventListener('submit', (event) => {
+        // 1. منع إعادة تحميل الصفحة
+        event.preventDefault();
+        console.log("تم إرسال النموذج! جاري حفظ البيانات...");
+
+        // 2. قراءة البيانات من حقول النموذج
+        const formData = new FormData(memberForm);
+        const newMember = {
+            id: familyData.nextId++, // إعطاء معرف فريد
+            name: formData.get('name'),
+            gender: formData.get('gender'),
+            birthYear: parseInt(formData.get('birth-year')) || null,
+            deathYear: parseInt(formData.get('death-year')) || null,
+            story: formData.get('story'),
+            // سنضيف الصورة لاحقًا
+        };
+
+        // 3. إضافة العضو الجديد إلى قائمة العائلة
+        familyData.members.push(newMember);
+        console.log("تمت إضافة عضو جديد:", newMember);
+        console.log("قائمة العائلة الحالية:", familyData);
+
+        // 4. إعادة تعيين النموذج وإغلاق النافذة
+        memberForm.reset();
+        memberModal.style.display = 'none';
     });
 
     console.log("اكتمل الإعداد الأساسي للواجهة.");
