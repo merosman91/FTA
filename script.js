@@ -1,4 +1,4 @@
-// البناء خطوة بخطوة: الخطوة 3 - عرض الأفراد على الشجرة
+// البناء خطوة بخطوة: الخطوة 3 - عرض الأفراد على الشجرة (مع تحسين مظهر العقد)
 
 document.addEventListener('DOMContentLoaded', () => {
 
@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const memberForm = document.getElementById('member-form');
     const closeBtns = document.querySelectorAll('.close-btn');
     const emptyState = document.getElementById('empty-state');
-    const treeSvg = d3.select("#tree-svg"); // استخدام D3 لاختيار الـ SVG
+    const treeSvg = d3.select("#tree-svg");
 
     // --- دالة مساعدة جديدة: حساب العمر ---
     function calculateAge(member) {
@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return member.deathYear ? `${age} (تُوفي)` : `${age} عامًا`;
     }
 
-    // --- وظيفة الرسم (الجديدة) ---
+    // --- وظيفة الرسم (تم تحديثها) ---
     function renderTree() {
         console.log("جاري رسم الشجرة...");
         treeSvg.selectAll("*").remove();
@@ -31,8 +31,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const nodes = treeSvg.selectAll("g")
             .data(familyData.members)
             .enter()
-            .append("g") // نضيف كل دائرة داخل مجموعة (g) لتسهيل التعامل معها
-            .attr("transform", (d, i) => `translate(${50 + i * 150}, 100)`); // وضع الأفراد في صف أفقي
+            .append("g")
+            .attr("transform", (d, i) => `translate(${50 + i * 150}, 100)`);
 
         nodes.append("circle")
             .attr("r", 30)
@@ -40,18 +40,18 @@ document.addEventListener('DOMContentLoaded', () => {
             .style("stroke", '#2c3e50')
             .style("stroke-width", 3);
 
+        // --- تحسين عرض الاسم ---
         nodes.append("text")
             .text(d => d.name)
             .attr("text-anchor", "middle")
-            .attr("dy", 5) // محاذاة النص في منتصف الدائرة
-            .style("fill", "white")
+            .attr("dy", 45) // **تغيير 1: نقل الاسم إلى أسفل الدائرة**
+            .style("fill", "#34495e") // **تغيير 2: تغيير اللون إلى لون داكن ليكون واضحًا**
             .style("font-weight", "bold");
 
-        // --- إضافة نص العمر ---
         nodes.append("text")
             .text(d => calculateAge(d))
             .attr("text-anchor", "middle")
-            .attr("dy", 65) // وضع العمر تحت الاسم
+            .attr("dy", 65)
             .style("font-size", "12px")
             .style("fill", "#555");
     }
@@ -65,7 +65,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             emptyState.style.display = 'none';
             treeSvg.node().style.display = 'block';
-            renderTree(); // استدعاء دالة الرسم عند وجود أفراد
+            renderTree();
         }
     }
 
@@ -90,7 +90,7 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log("تمت إضافة عضو جديد:", newMember);
         memberForm.reset();
         memberModal.style.display = 'none';
-        checkUIState(); // تحديث الواجهة سيؤدي إلى استدعاء renderTree
+        checkUIState();
     });
 
     // --- الإعداد الأولي ---
