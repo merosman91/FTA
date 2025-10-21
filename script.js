@@ -1,12 +1,13 @@
-// تشخيص للنسخة الجديدة: هل تتطابق الملفات؟
+// تشخيص مصحح: التمييز بين ID و Class
 
 document.addEventListener('DOMContentLoaded', () => {
 
-    console.log("بدء فحص التشخيص للنسخة الجديدة...");
+    console.log("بدء فحص التشخيص المصحح...");
 
+    // قائمة بعناصر الـ ID التي يجب التحقق منها
     const elementIds = [
         'add-member-btn', 'share-btn', 'member-modal', 'member-form', 'modal-title',
-        'close-btns', 'empty-state', 'tree-svg', 'context-menu', 'details-modal',
+        'empty-state', 'tree-svg', 'context-menu', 'details-modal',
         'details-name', 'details-photo', 'details-info', 'details-story',
         'edit-member-btn', 'delete-member-btn', 'photo'
     ];
@@ -14,6 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let allFound = true;
     const missingElements = [];
 
+    // التحقق من عناصر الـ ID
     elementIds.forEach(id => {
         const element = document.getElementById(id);
         if (!element) {
@@ -22,13 +24,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // التحقق من وجود عناصر متعددة (مثل closeBtns)
+    // التحقق من عناصر الـ Class بشكل منفصل
     const closeBtns = document.querySelectorAll('.close-btn');
     if (closeBtns.length === 0) {
         allFound = false;
         missingElements.push('.close-btn');
     }
-
 
     const statusDiv = document.createElement('div');
     statusDiv.style.position = 'fixed';
@@ -42,7 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.body.appendChild(statusDiv);
 
     if (allFound) {
-        statusDiv.textContent = "نجح: جميع عناصر HTML موجودة. المشكلة هي على الأرجح خطأ برمجي في كود JavaScript.";
+        statusDiv.textContent = "نجح: جميع عناصر HTML موجودة. المشكلة هي على الأرجح خطأ برمجي في كود JavaScript المعقد.";
         statusDiv.style.backgroundColor = '#2ecc71';
         statusDiv.style.color = 'white';
     } else {
