@@ -1,92 +1,308 @@
+:root {
+    --primary-color: #2c3e50;
+    --secondary-color: #3498db;
+    --accent-color: #e74c3c;
+    --background-color: #ecf0f1;
+    --text-color: #34495e;
+    --card-background: #ffffff;
+    --male-color: #3498db;
+    --female-color: #e91e63;
+    --deceased-opacity: 0.6;
+}
+
 body {
     font-family: 'Tajawal', sans-serif;
-    padding: 20px;
+    margin: 0;
+    background-color: var(--background-color);
+    color: var(--text-color);
     direction: rtl;
-    background-color: #f4f4f9;
 }
 
-h1 {
-    text-align: center;
-    color: #2c3e50;
-}
-
-.controls {
-    display: flex;
-    justify-content: center;
-    gap: 10px;
-    margin-bottom: 20px;
-    flex-wrap: wrap;
-}
-
-#name-input {
-    padding: 10px;
-    font-size: 1rem;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-}
-
-button {
-    padding: 10px 15px;
-    font-size: 1rem;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    background-color: #3498db;
+.app-header {
+    background-color: var(--primary-color);
     color: white;
+    padding: 1rem 2rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
-button:hover {
-    background-color: #2980b9;
-}
-
-#members-list {
-    max-width: 600px;
-    margin: 0 auto 20px auto;
-    border: 1px solid #ddd;
-    padding: 10px;
-    background-color: white;
-    border-radius: 5px;
-}
-
-.member-item {
+.header-top {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 8px;
-    border-bottom: 1px solid #eee;
 }
 
-.member-item:last-child {
-    border-bottom: none;
+.app-header h1 {
+    margin: 0;
+    font-size: 2.5rem;
 }
 
-.member-item select {
-    padding: 5px;
-    border: 1px solid #ccc;
-    border-radius: 3px;
+.app-header p {
+    margin: 0.2rem 0 0 0;
+    opacity: 0.8;
 }
+
+.header-actions {
+    display: flex;
+    gap: 1rem;
+}
+
+.header-actions button, .primary-action {
+    background-color: var(--secondary-color);
+    color: white;
+    border: none;
+    padding: 0.8rem 1.5rem;
+    font-size: 1rem;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.header-actions button:hover, .primary-action:hover {
+    background-color: #2980b9;
+}
+
+#share-btn {
+    background-color: #95a5a6;
+}
+#share-btn:hover {
+    background-color: #7f8c8d;
+}
+
+.tree-container {
+    width: 100%;
+    height: calc(100vh - 120px);
+    overflow: auto;
+    position: relative;
+}
+
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    text-align: center;
+    color: #7f8c8d;
+}
+.empty-state h2 { color: var(--primary-color); }
 
 #tree-svg {
+    display: block;
     width: 100%;
-    height: 500px;
-    border: 1px solid #ddd;
-    background-color: white;
+    height: 100%;
+    cursor: grab;
+}
+#tree-svg.dragging {
+    cursor: grabbing;
+}
+
+/* أنماط العقد في الشجرة */
+.person-node {
+    cursor: pointer;
 }
 
 .person-node circle {
-    fill: #3498db;
-    stroke: #2c3e50;
-    stroke-width: 2px;
+    stroke-width: 3px;
+    transition: r 0.2s ease-in-out;
+}
+
+.person-node.male circle { fill: var(--male-color); stroke: var(--primary-color); }
+.person-node.female circle { fill: var(--female-color); stroke: var(--primary-color); }
+
+.person-node.deceased {
+    opacity: var(--deceased-opacity);
+}
+
+.person-node.deceased circle {
+    stroke-dasharray: 5, 5;
+}
+
+.person-node:hover circle {
+    r: 35;
+    filter: drop-shadow(0 0 8px rgba(0,0,0,0.3));
 }
 
 .person-node text {
-    font-size: 12px;
     text-anchor: middle;
-    fill: white;
+    font-weight: bold;
+    font-size: 14px;
+    pointer-events: none;
+    fill: var(--primary-color);
 }
 
 .tree-link {
     fill: none;
-    stroke: #999;
+    stroke: #7f8c8d;
     stroke-width: 2px;
+}
+
+/* أنماط النوافذ المنبثقة */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+    animation: fadeIn 0.3s;
+}
+
+.modal-content {
+    background-color: var(--card-background);
+    margin: 2% auto;
+    padding: 2rem;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 500px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    animation: slideIn 0.3s;
+    position: relative;
+}
+
+.details-modal-content {
+    max-width: 600px;
+}
+
+.close-btn {
+    position: absolute;
+    top: 10px;
+    left: 20px;
+    color: #aaa;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.close-btn:hover {
+    color: black;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+}
+
+.form-group input, .form-group select, .form-group textarea {
+    width: 100%;
+    padding: 0.8rem;
+    border: 1px solid #bdc3c7;
+    border-radius: 4px;
+    box-sizing: border-box;
+    font-size: 1rem;
+    font-family: 'Tajawal', sans-serif;
+}
+
+.submit-btn {
+    width: 100%;
+    background-color: var(--secondary-color);
+    color: white;
+    border: none;
+    padding: 1rem;
+    font-size: 1.1rem;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.submit-btn:hover {
+    background-color: #2980b9;
+}
+
+.danger {
+    background-color: var(--accent-color) !important;
+}
+
+.danger:hover {
+    background-color: #c0392b !important;
+}
+
+/* أنماط قائمة السياق */
+.context-menu {
+    position: absolute;
+    display: none;
+    background-color: white;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    box-shadow: 0px 2px 5px rgba(0,0,0,0.2);
+    z-index: 1000;
+    overflow: hidden;
+}
+
+.context-menu button {
+    display: block;
+    width: 100%;
+    padding: 10px 15px;
+    border: none;
+    background: none;
+    text-align: right;
+    cursor: pointer;
+    font-size: 1rem;
+    font-family: 'Tajawal', sans-serif;
+    color: var(--text-color);
+}
+
+.context-menu button:hover {
+    background-color: #f0f0f0;
+}
+
+.details-header {
+    display: flex;
+    gap: 1.5rem;
+    align-items: center;
+    border-bottom: 1px solid #ecf0f1;
+    padding-bottom: 1rem;
+    margin-bottom: 1rem;
+}
+
+.details-header img {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid var(--secondary-color);
+}
+
+.details-body h3 {
+    color: var(--primary-color);
+    border-bottom: 2px solid var(--secondary-color);
+    padding-bottom: 0.5rem;
+    margin-top: 0;
+}
+
+.details-actions {
+    margin-top: 1.5rem;
+    display: flex;
+    gap: 1rem;
+}
+
+.details-actions button {
+    flex-grow: 1;
+    padding: 0.8rem;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1rem;
+    color: white;
+}
+
+#edit-member-btn { background-color: #f39c12; }
+#edit-member-btn:hover { background-color: #e67e22; }
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideIn {
+    from { transform: translateY(-50px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
     }
