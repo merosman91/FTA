@@ -1,54 +1,136 @@
-// تشخيص مصحح: التمييز بين ID و Class
+// البناء خطوة بخطوة: الخطوة 4أ - الرسم الهرمي فقط
+
+console.log("ملف script.js تم تحميله بنجاح!");
 
 document.addEventListener('DOMContentLoaded', () => {
 
-    console.log("بدء فحص التشخيص المصحح...");
+    // --- بيانات التطبيق (State) ---
+    let familyData = { members: [], nextId: 1 };
 
-    // قائمة بعناصر الـ ID التي يجب التحقق منها
-    const elementIds = [
-        'add-member-btn', 'share-btn', 'member-modal', 'member-form', 'modal-title',
-        'empty-state', 'tree-svg', 'context-menu', 'details-modal',
-        'details-name', 'details-photo', 'details-info', 'details-story',
-        'edit-member-btn', 'delete-member-btn', 'photo'
-    ];
+    // --- عناصر DOM ---
+    const addBtn = document.getElementById('add-member-btn');
+    const shareBtn = document.getElementById('share-btn');
+    const memberModal = document.getElementById('member-modal');
+    const memberForm = document.getElementById('member-form');
+    const closeBtns = document.querySelectorAll('.close-btn');
+    const emptyState = document.getElementById('empty-state');
+    const treeSvg = d3.select("#tree-svg");
 
-    let allFound = true;
-    const missingElements = [];
+    // --- دالة مساعدة: حساب العمر ---
+    function calculateAge(member) {
+        if (!member.birthYear) return '';
+        const endYear = member.deathYear || new Date().getFullYear();
+        const age = endYear - member.birthYear;
+        return member.deathYear ? `${age} (تُوفي)` : `${age} عامًا`;
+    }
 
-    // التحقق من عناصر الـ ID
-    elementIds.forEach(id => {
-        const element = document.getElementById(id);
-        if (!element) {
-            allFound = false;
-            missingElements.push(id);
+    // --- وظيفة بناء التسلسل الهرمي (جديدة) ---
+    // تحول البيانات المسطحة إلى بنية شجرية يمكن لـ D3 فهمها
+    function buildHierarchy(data) {
+        if (data.length === 0) return null;
+        const stratify = d3.stratify()
+            .id(d => d.id)
+            .parentId(d => d.parentId);
+        return stratify(data);
+    }
+
+    // --- وظيفة الرسم (تم تحديثها بالكامل للرسم الهرمي) ---
+    function renderTree() {
+        console.log("جاري رسم الشجرة الهرمية...");
+        const width = treeSvg.node().clientWidth;
+        const height = treeSvg.node().clientHeight;
+        const margin = { top: 50, right: 50, bottom: 50, left: 50 };
+        const innerWidth = width - margin.left - margin.right;
+        const innerHeight = height - margin.top - margin.bottom;
+
+        treeSvg.selectAll("*").remove();
+        treeSvg.attr("width", width).attr("height", height);
+
+        const hierarchyRoot = buildHierarchy(familyData.members);
+        if (!hierarchyRoot) return;
+
+        const treeLayout = d3.tree().size([innerHeight, innerWidth]);
+        const treeG = treeSvg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
+
+        const treeNodes = treeLayout(hierarchyRoot).descendants();
+        const treeLinks = hierarchyRoot.links();
+
+        // رسم الروابط (الخطوط) - جديد
+        treeG.selectAll(".tree-link")
+            .data(treeLinks)
+            .enter().append("path")
+            .attr("class", "tree-link")
+            .attr("d", d3.linkHorizontal()
+                .x(d => d.y)
+                .y(d => d.x)
+            );
+
+        // رسم العقد
+        const node = treeG.selectAll(".person-node")
+            .data(treeNodes)
+            .enter().append("g")
+            .attr("class", d => `person-node ${d.data.gender}`)
+            .attr("transform", d => `translate(${d.y},${d.x})`);
+
+        node.append("circle")
+            .attr("r", 30)
+            .style("fill", d => d.data.gender === 'male' ? '#3498db' : '#e91e63')
+            .style("stroke", '#2c3e50')
+            .style("stroke-width", 3);
+
+        node.append("text")
+            .text(d => d.data.name)
+            .attr("text-anchor", "middle")
+            .attr("dy", 45)
+            .style("fill", "#34495e")
+            .style("font-weight", "bold");
+
+        node.append("text")
+            .text(d => calculateAge(d.data))
+            .attr("text-anchor", "middle")
+            .attr("dy", 65)
+            .style("font-size", "12px")
+            .style("fill", "#555");
+    }
+
+    // --- وظائف التحكم في الواجهة ---
+    function checkUIState() {
+        if (familyData.members.length === 0) {
+            emptyState.style.display = 'flex';
+            treeSvg.node().style.display = 'none';
+        } else {
+            emptyState.style.display = 'none';
+            treeSvg.node().style.display = 'block';
+            renderTree();
         }
+    }
+
+    // --- معالجات الأحداث ---
+    addBtn.addEventListener('click', () => { memberModal.style.display = 'block'; });
+    shareBtn.addEventListener('click', () => { alert("زر المشاركة يعمل!"); });
+    closeBtns.forEach(btn => { btn.addEventListener('click', () => { memberModal.style.display = 'none'; }); });
+    window.addEventListener('click', (event) => { if (event.target === memberModal) { memberModal.style.display = 'none'; } });
+
+    memberForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const formData = new FormData(memberForm);
+        const newMember = {
+            id: familyData.nextId++,
+            name: formData.get('name'),
+            gender: formData.get('gender'),
+            birthYear: parseInt(formData.get('birth-year')) || null,
+            deathYear: parseInt(formData.get('death-year')) || null,
+            story: formData.get('story'),
+            photo: null, // سنضيف الصورة لاحقًا
+        };
+        familyData.members.push(newMember);
+        console.log("تمت إضافة عضو جديد:", newMember);
+        memberForm.reset();
+        memberModal.style.display = 'none';
+        checkUIState();
     });
 
-    // التحقق من عناصر الـ Class بشكل منفصل
-    const closeBtns = document.querySelectorAll('.close-btn');
-    if (closeBtns.length === 0) {
-        allFound = false;
-        missingElements.push('.close-btn');
-    }
+    // --- الإعداد الأولي ---
+    checkUIState();
 
-    const statusDiv = document.createElement('div');
-    statusDiv.style.position = 'fixed';
-    statusDiv.style.top = '10px';
-    statusDiv.style.left = '10px';
-    statusDiv.style.padding = '15px';
-    statusDiv.style.borderRadius = '5px';
-    statusDiv.style.zIndex = '10000';
-    statusDiv.style.fontFamily = 'Tajawal, sans-serif';
-    statusDiv.style.fontSize = '1rem';
-    document.body.appendChild(statusDiv);
-
-    if (allFound) {
-        statusDiv.textContent = "نجح: جميع عناصر HTML موجودة. المشكلة هي على الأرجح خطأ برمجي في كود JavaScript المعقد.";
-        statusDiv.style.backgroundColor = '#2ecc71';
-        statusDiv.style.color = 'white';
-    } else {
-        statusDiv.innerHTML = `فشل: لم يتم العثور على العناصر التالية:<br><strong>${missingElements.join(', ')}</strong><br>تأكد من أن ملف index.html محدث ومطابق لملف script.js.`;
-        statusDiv.style.backgroundColor = '#e74c3c';
-        statusDiv.style.color = 'white';
-    }
 });
