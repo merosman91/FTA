@@ -1,4 +1,4 @@
-// البناء خطوة بخطوة: الخطوة 4أ - الرسم الهرمي فقط
+// البناء خطوة بخطوة: الخطوة 4أ - الرسم الهرمي (تم إصلاح العلاقات)
 
 console.log("ملف script.js تم تحميله بنجاح!");
 
@@ -24,8 +24,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return member.deathYear ? `${age} (تُوفي)` : `${age} عامًا`;
     }
 
-    // --- وظيفة بناء التسلسل الهرمي (جديدة) ---
-    // تحول البيانات المسطحة إلى بنية شجرية يمكن لـ D3 فهمها
+    // --- وظيفة بناء التسلسل الهرمي ---
     function buildHierarchy(data) {
         if (data.length === 0) return null;
         const stratify = d3.stratify()
@@ -34,7 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return stratify(data);
     }
 
-    // --- وظيفة الرسم (تم تحديثها بالكامل للرسم الهرمي) ---
+    // --- وظيفة الرسم ---
     function renderTree() {
         console.log("جاري رسم الشجرة الهرمية...");
         const width = treeSvg.node().clientWidth;
@@ -55,7 +54,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const treeNodes = treeLayout(hierarchyRoot).descendants();
         const treeLinks = hierarchyRoot.links();
 
-        // رسم الروابط (الخطوط) - جديد
+        // رسم الروابط (الخطوط)
         treeG.selectAll(".tree-link")
             .data(treeLinks)
             .enter().append("path")
@@ -114,6 +113,14 @@ document.addEventListener('DOMContentLoaded', () => {
     memberForm.addEventListener('submit', async (event) => {
         event.preventDefault();
         const formData = new FormData(memberForm);
+        
+        // --- الإصلاح المؤقت: قراءة parentId من حقل القصة ---
+        let parentId = null;
+        const storyText = formData.get('story');
+        if (storyText && storyText.startsWith('parentId:')) {
+            parentId = parseInt(storyText.split(':')[1], 10);
+        }
+
         const newMember = {
             id: familyData.nextId++,
             name: formData.get('name'),
@@ -121,7 +128,8 @@ document.addEventListener('DOMContentLoaded', () => {
             birthYear: parseInt(formData.get('birth-year')) || null,
             deathYear: parseInt(formData.get('death-year')) || null,
             story: formData.get('story'),
-            photo: null, // سنضيف الصورة لاحقًا
+            photo: null,
+            parentId: parentId // **هذا هو السطر المهم**
         };
         familyData.members.push(newMember);
         console.log("تمت إضافة عضو جديد:", newMember);
