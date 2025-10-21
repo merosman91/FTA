@@ -3,20 +3,107 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>أصلي - الإصدار البسيط</title>
+    <title>تطبيق "أصلي" - شجرة العائلة</title>
     <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
     <script src="d3.min.js"></script>
 </head>
 <body>
-    <h1>شجرة عائلتك</h1>
-    <div class="controls">
-        <input type="text" id="name-input" placeholder="اكتب اسم الشخص">
-        <button id="add-person-btn">إضافة شخص</button>
-        <button id="draw-tree-btn">ارسم الشجرة</button>
+
+    <header class="app-header">
+        <div class="header-top">
+            <div>
+                <h1>أصلي</h1>
+                <p>شجرة عائلتك الرقمية</p>
+            </div>
+            <div class="header-actions">
+                <button id="share-btn">🔗 مشاركة</button>
+                <button id="add-member-btn">➕ إضافة فرد للعائلة</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="tree-container">
+        <div id="empty-state" class="empty-state">
+            <h2>مرحباً بك في عائلتك الرقمية!</h2>
+            <p>ابدأ بإنشاء شجرة عائلتك بإضافة أول فرد.</p>
+            <button class="primary-action" onclick="document.getElementById('add-member-btn').click()">أضف أول فرد</button>
+        </div>
+        <svg id="tree-svg" width="100%" height="100%" style="display: none;"></svg>
+    </main>
+
+    <!-- قائمة السياق -->
+    <div id="context-menu" class="context-menu">
+        <button data-relation="spouse">إضافة زوج/زوجة</button>
+        <button data-relation="son">إضافة ابن</button>
+        <button data-relation="daughter">إضافة ابنة</button>
+        <button data-relation="father">إضافة والد</button>
+        <button data-relation="mother">إضافة والدة</button>
     </div>
-    <div id="members-list"></div>
-    <svg id="tree-svg"></svg>
+
+    <!-- نافذة إضافة/تعديل فرد -->
+    <div id="member-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <h2 id="modal-title">إضافة فرد جديد</h2>
+            <form id="member-form">
+                <input type="hidden" id="member-id" name="member-id">
+                <div class="form-group">
+                    <label for="name">الاسم الكامل</label>
+                    <input type="text" id="name" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="gender">النوع</label>
+                    <select id="gender" name="gender" required>
+                        <option value="male">ذكر</option>
+                        <option value="female">أنثى</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="birth-year">سنة الميلاد</label>
+                    <input type="number" id="birth-year" name="birth-year" placeholder="مثال: 1950">
+                </div>
+                <div class="form-group">
+                    <label for="death-year">سنة الوفاة (إن وجدت)</label>
+                    <input type="number" id="death-year" name="death-year" placeholder="مثال: 2020">
+                </div>
+                <div class="form-group">
+                    <label for="photo">صورة شخصية</label>
+                    <input type="file" id="photo" name="photo" accept="image/*">
+                </div>
+                <div class="form-group">
+                    <label for="story">القصة / ملاحظات</label>
+                    <textarea id="story" name="story" rows="4" placeholder="أضف قصة أو ذكرى جميلة عن هذا الشخص..."></textarea>
+                </div>
+                <button type="submit" class="submit-btn">حفظ</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- نافذة عرض تفاصيل الفرد -->
+    <div id="details-modal" class="modal">
+        <div class="modal-content details-modal-content">
+            <span class="close-btn">&times;</span>
+            <div class="details-header">
+                <img id="details-photo" src="https://via.placeholder.com/100" alt="صورة">
+                <div>
+                    <h2 id="details-name"></h2>
+                    <p id="details-info"></p>
+                </div>
+            </div>
+            <div class="details-body">
+                <h3>القصة</h3>
+                <p id="details-story">لم تتم إضافة قصة بعد.</p>
+            </div>
+            <div class="details-actions">
+                <button id="edit-member-btn">✏️ تعديل</button>
+                <button id="delete-member-btn" class="danger">🗑️ حذف</button>
+            </div>
+        </div>
+    </div>
+
     <script src="script.js"></script>
 </body>
-</html>
+    </html>
