@@ -1,56 +1,79 @@
 <!DOCTYPE html>
 <html lang="ar">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>شجرة العائلة</title>
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>شجرة العائلة</title>
+  <link rel="stylesheet" href="style.css">
+
+  <!-- D3.js -->
+  <script src="https://d3js.org/d3.v7.min.js"></script>
 </head>
-<body>
+<body dir="rtl">
 
-    <div id="toolbar">
-        <button id="add-member-btn">إضافة فرد</button>
-        <button id="download-tree-btn">تحميل الشجرة</button>
-    </div>
+  <header>
+    <h1>🌳 شجرة العائلة</h1>
+  </header>
 
+  <main>
+    <!-- قسم عرض الشجرة -->
     <div id="tree-container">
-        <div id="empty-state">لا توجد بيانات بعد. أضف أفراد العائلة لبدء الرسم.</div>
-        <svg id="tree-svg"></svg>
+      <svg id="tree-svg" width="100%" height="600"></svg>
     </div>
 
-    <!-- نافذة إضافة أو تعديل فرد -->
-    <div id="modal" class="modal hidden">
-        <form id="member-form">
-            <input type="hidden" id="member-id">
-
-            <label>الاسم:</label>
-            <input type="text" id="name" required>
-
-            <label>تاريخ الميلاد:</label>
-            <input type="date" id="dob">
-
-            <label>العلاقة:</label>
-            <select id="relation-type">
-                <option value="">اختر نوع العلاقة</option>
-                <option value="father">أب</option>
-                <option value="mother">أم</option>
-                <option value="son">ابن</option>
-                <option value="daughter">ابنة</option>
-                <option value="spouse">زوج/زوجة</option>
-            </select>
-
-            <label>مع من ترتبط العلاقة:</label>
-            <select id="relation-to"></select>
-
-            <label>صورة:</label>
-            <input type="file" id="photo" accept="image/*">
-
-            <button type="submit">حفظ</button>
-            <button type="button" id="cancel-btn">إلغاء</button>
-        </form>
+    <!-- حالة فارغة -->
+    <div id="empty-state">
+      <p>لا توجد بيانات بعد. أضف أول فرد للعائلة!</p>
+      <button id="add-first-member">➕ إضافة أول فرد</button>
     </div>
+  </main>
 
-    <script src="https://d3js.org/d3.v7.min.js"></script>
-    <script src="script.js"></script>
+  <!-- نافذة إضافة/تعديل الفرد -->
+  <div id="member-modal" class="modal hidden">
+    <div class="modal-content">
+      <h2 id="modal-title">إضافة فرد</h2>
+
+      <form id="member-form">
+        <input type="hidden" id="member-id">
+
+        <label>الاسم:</label>
+        <input type="text" id="name" required>
+
+        <label>العلاقة:</label>
+        <select id="relation-type">
+          <option value="">اختر العلاقة</option>
+          <option value="father">أب</option>
+          <option value="mother">أم</option>
+          <option value="son">ابن</option>
+          <option value="daughter">ابنة</option>
+          <option value="spouse">زوج/زوجة</option>
+        </select>
+
+        <label>يتعلق بـ:</label>
+        <select id="relation-to">
+          <option value="">بدون</option>
+        </select>
+
+        <label>الصورة:</label>
+        <input type="file" id="photo" accept="image/*">
+
+        <div class="modal-actions">
+          <button type="submit" id="save-member">💾 حفظ</button>
+          <button type="button" id="cancel-member">❌ إلغاء</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- قائمة عند النقر على الأفراد -->
+  <div id="context-menu" class="hidden">
+    <ul>
+      <li id="add-relative">➕ إضافة قريب</li>
+      <li id="edit-member">✏️ تعديل</li>
+      <li id="delete-member">🗑️ حذف</li>
+    </ul>
+  </div>
+
+  <script src="app.js"></script>
 </body>
-                    </html>
+    </html>
